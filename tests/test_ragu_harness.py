@@ -169,7 +169,9 @@ def test_bounded_native_and_free_modes_preserve_upstream_contract():
     for model, field in ((EntitiesExtractionModel, "entities"), (RelationsExtractionModel, "relations")):
         schema = generation_schema(model, protocol)
         assert schema["properties"][field]["maxItems"] == 16
+        assert field in schema["required"] and schema["additionalProperties"] is False
         definition = next(iter(schema["$defs"].values()))
+        assert definition["additionalProperties"] is False
         assert definition["properties"]["description"]["maxLength"] == 200
         assert "maxItems" not in model.model_json_schema()["properties"][field]
         assert generation_schema(model, {**protocol, "extraction_decoding": "native"}) == model.model_json_schema()
@@ -212,6 +214,28 @@ async def test_native_ragu_schema_uses_grammar_transport(tmp_path):
     assert result.entities == []
     assert set(requests[0]["structured_outputs"]) == {"grammar"}
     assert requests[0]["repetition_penalty"] == 1.03 and requests[0]["seed"] == 42
+    adapter.close()
+
+
+@pytest.mark.asyncio
+async def test_free_decoding_still_returns_native_pydantic_model(tmp_path):
+    from ragu.common.prompts.default_models import EntitiesExtractionModel
+    config = read_json(ROOT / "config.ragu.example.json")
+    config["protocol"]["extraction_decoding"] = "free"
+    adapter = ProtocolLLM({"model": "test", "base_url": "http://localhost/v1"}, config, tmp_path)
+    adapter.generator.client.close()
+    requests = []
+
+    def reply(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "test", "object": "chat.completion", "created": 0, "model": "test",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": '{"entities":[]}'}, "finish_reason": "stop"}]})
+
+    adapter.generator.client = OpenAI(base_url="http://localhost/v1", api_key="EMPTY",
+                                       http_client=httpx.Client(transport=httpx.MockTransport(reply)))
+    result = await adapter.chat_completion([{"role": "user", "content": "SOURCE"}], output_schema=EntitiesExtractionModel)
+    assert isinstance(result, EntitiesExtractionModel)
+    assert "structured_outputs" not in requests[0]
     adapter.close()
 
 

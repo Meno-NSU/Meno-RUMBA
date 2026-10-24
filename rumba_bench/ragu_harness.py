@@ -60,7 +60,11 @@ def generation_schema(output_schema, protocol):
         if field in properties:
             properties[field]["maxItems"] = limits[field]
     if protocol["extraction_decoding"] == "bounded":
+        schema["required"] = list(properties)
+        schema["additionalProperties"] = False
         for definition in schema.get("$defs", {}).values():
+            if definition.get("type") == "object":
+                definition["additionalProperties"] = False
             for name, field in definition.get("properties", {}).items():
                 if field.get("type") == "string":
                     field["maxLength"] = limits["description_chars" if name == "description" else "name_chars"]
@@ -99,7 +103,7 @@ class ProtocolLLM(LLM):
                     allow_incomplete=output_schema is str,
                 )
                 self.calls.append(raw)
-                return raw["text"] if schema is None else output_schema.model_validate_json(raw["text"])
+                return raw["text"] if output_schema is str else output_schema.model_validate_json(raw["text"])
             except Exception as error:
                 self.errors.append({"error": str(error), "conversation_hash": digest(conversation),
                                     "schema": output_schema.__name__})
