@@ -17,10 +17,11 @@
     "batch_size": 16,
     "query_prefix": "",
     "passage_prefix": "",
-    "dimensions": 1024
+    "dimensions": 1024,
+    "min_context_tokens": 8192
   },
   "runtime": {
-    "concurrency": 4,
+    "concurrency": 8,
     "timeout_s": 300,
     "max_retries": 2
   },
@@ -28,7 +29,8 @@
     "base_url": "http://localhost:8002/v1",
     "model": "bge-reranker-v2-m3",
     "source_model": "BAAI/bge-reranker-v2-m3",
-    "revision": null
+    "revision": null,
+    "min_context_tokens": 8192
   },
   "judge": null,
   "protocol": {
@@ -79,6 +81,22 @@
     "server_structured_outputs": {
       "backend": "xgrammar",
       "disable_any_whitespace": true
+    },
+    "context_routing": {
+      "enabled": true,
+      "native_context_tokens": 32768,
+      "extended_context_tokens": 65536
     }
+  },
+  "long_context_models": {
+    "meno-lite-0.2": {
+      "base_url": "http://localhost:8003/v1",
+      "model": "meno-lite-0.2",
+      "weights": "bond005/meno-lite-0.2 (operator-provided server; revision unverified)",
+      "rope_profile": "yarn-2x-preserve-checkpoint-rope-theta",
+      "max_model_len": 65536
+    },
+    "meno-lite-0.1": null,
+    "qwen2.5-7b-instruct": null
   }
 }

@@ -41,6 +41,7 @@ from .pipeline import Generation, chunks, generation_parameters
 from .report import comparison, make_report
 from .upstream import load_official
 from .ragu_decoding import schema_grammar
+from .ragu_routing import ContextRoutingLLM
 
 RAGU_REVISION = "abd3f2958c186dc624bbd42560ad6e1e7033efaf"
 
@@ -181,7 +182,7 @@ def manifest(config):
     return {"harness": "ragu-two-stage-local-rerank-v1", "ragu_revision": revision,
             "ragu_source_hash": digest({str(p.relative_to(source)): digest(p.read_text()) for p in sorted(source.rglob("*.py"))}),
             "runner_hashes": {name: digest((ROOT / "rumba_bench" / name).read_text()) for name in
-                              ("ragu_harness.py", "ragu_decoding.py", "pipeline.py", "data.py", "upstream.py", "report.py")},
+                              ("ragu_harness.py", "ragu_decoding.py", "ragu_routing.py", "pipeline.py", "data.py", "upstream.py", "report.py")},
             "protocol": config["protocol"], "generation": generation_parameters(config["protocol"]),
             "embedding": config["embedding"], "reranker": config["reranker"],
             "dataset": read_json(ROOT / "data/manifest.json"), "official": read_json(ROOT / "vendor/rumba/manifest.json"),
@@ -202,6 +203,9 @@ def validate_config(config):
         raise ValueError("structured_limits must contain four positive integer limits")
     if not config.get("reranker") or not config.get("embedding"):
         raise ValueError("Remote embedding AND reranker endpoints are required")
+    routing = protocol.get("context_routing", {})
+    if routing.get("enabled") and not 0 < routing["native_context_tokens"] < routing["extended_context_tokens"]:
+        raise ValueError("Invalid native/extended context limits")
 
 
 def remote_client(endpoint, config, cache):
@@ -230,12 +234,30 @@ class Harness:
         self.folder = self.root / label
         write_json(self.root / "manifest.json", self.spec)
         endpoint_path = self.folder / "endpoint.json"
-        if endpoint_path.exists() and read_json(endpoint_path) != endpoint:
+        endpoint_identity = ({"native": endpoint, "yarn": config.get("long_context_models", {}).get(label)}
+                             if self.protocol.get("context_routing", {}).get("enabled") else endpoint)
+        if endpoint_path.exists() and read_json(endpoint_path) != endpoint_identity:
             raise ValueError("Model endpoint changed within an existing run; use a new run/model label")
-        write_json(endpoint_path, endpoint)
+        write_json(endpoint_path, endpoint_identity)
         cache = ROOT / "runs/cache/ragu"
-        self.extract_llm = ProtocolLLM(endpoint, config, cache / "generation")
-        self.answer_llm = ProtocolLLM(endpoint, config, cache / "generation", answer=True)
+        def llm(answer=False):
+            native = ProtocolLLM(endpoint, config, cache / "generation", answer=answer)
+            if not self.protocol.get("context_routing", {}).get("enabled"):
+                return native
+            extended_endpoint = config.get("long_context_models", {}).get(label)
+            if not extended_endpoint:
+                native.close()
+                raise ValueError(f"Configure a separate YaRN endpoint: long_context_models.{label}")
+            if extended_endpoint["model"] != endpoint["model"]:
+                native.close()
+                raise ValueError("Native and YaRN endpoints must serve the same model")
+            if extended_endpoint["base_url"].rstrip("/") == endpoint["base_url"].rstrip("/"):
+                native.close()
+                raise ValueError("Native and YaRN endpoints must have distinct URLs")
+            extended = ProtocolLLM(extended_endpoint, config, cache / "generation", answer=answer)
+            return ContextRoutingLLM(native, extended, endpoint, config, cache / "tokenization")
+        self.extract_llm = llm()
+        self.answer_llm = llm(answer=True)
         self.embedding_client = remote_client(config["embedding"], config, cache / "embedding")
         self.scorer_client = remote_client(config["reranker"], config, cache / "reranker")
         self.embedder = EmbedderOpenAI(self.embedding_client, config["embedding"]["model"],
@@ -287,7 +309,9 @@ class Harness:
                 "seconds": time.monotonic() - started, "llm_calls": len(self.extract_llm.calls) - calls_before,
                 "llm_errors": self.extract_llm.errors[errors_before:],
                 "finish_reasons": [r["finish_reason"] for r in self.extract_llm.calls[calls_before:]],
-                "ontology_reports": graph.pipeline.artifact_extractor.validator.reports}
+                "ontology_reports": graph.pipeline.artifact_extractor.validator.reports,
+                "routing": {name: sum(raw.get("routing", {}).get("backend") == name for raw in self.extract_llm.calls[calls_before:])
+                            for name in ("native", "yarn")}}
         info["status"] = "complete_with_llm_errors" if info["llm_errors"] else "complete"
         write_json(storage / "build_report.json", info)
         if not audit.is_consistent or not nodes or not info["all_source_chunks_stored"]:
@@ -312,6 +336,7 @@ class Harness:
         row = {**question, "prediction": response.response, "seconds": time.monotonic() - started,
                "usage": raw["usage"], "finish_reason": raw["finish_reason"],
                "truncated": raw["finish_reason"] != "stop",
+               "routing": raw.get("routing"),
                "retrieved_sessions": sorted(retrieved), "visible_sessions": sorted(visible),
                "retrieval_recall": len(evidence & retrieved) / len(evidence) if evidence else None,
                "all_evidence_retrieved": evidence <= retrieved if evidence else None,
@@ -334,14 +359,42 @@ class Harness:
 
 
 async def preflight(config, label):
+    native = config["models"].get(label)
+    if not native:
+        raise ValueError(f"Model endpoint is not configured: {label}")
+    routing = config["protocol"].get("context_routing", {})
+    services = [("policy", native, routing.get("native_context_tokens", 0)),
+                ("embedding", config["embedding"], config["embedding"].get("min_context_tokens", 0)),
+                ("reranker", config["reranker"], config["reranker"].get("min_context_tokens", 0))]
+    if routing.get("enabled"):
+        extended = config.get("long_context_models", {}).get(label)
+        if not extended:
+            raise ValueError(f"Configure long_context_models.{label}")
+        if extended["base_url"].rstrip("/") == native["base_url"].rstrip("/"):
+            raise ValueError("Native and YaRN endpoints must have distinct URLs")
+        services.append(("policy_yarn", extended, routing["extended_context_tokens"]))
+    checks, errors = [], []
     async with httpx.AsyncClient(trust_env=False, timeout=60) as client:
-        for name, endpoint in (("policy", config["models"][label]), ("embedding", config["embedding"]), ("reranker", config["reranker"])):
+        for name, endpoint, required_context in services:
             response = await client.get(endpoint["base_url"].rstrip("/") + "/models")
             response.raise_for_status()
             names = [item["id"] for item in response.json()["data"]]
             if endpoint["model"] not in names:
                 raise ValueError(f"{name}: expected {endpoint['model']}, available {names}")
-            print(canonical({"service": name, "models": names}), flush=True)
+            model = next(item for item in response.json()["data"] if item["id"] == endpoint["model"])
+            limit = model.get("max_model_len")
+            check = {"service": name, "models": names, "max_model_len": limit, "required_context": required_context}
+            checks.append(check)
+            if routing.get("enabled") and name == "policy" and limit != routing["native_context_tokens"]:
+                errors.append(f"policy: context {limit} must equal native context {routing['native_context_tokens']}")
+            elif routing.get("enabled") and name == "policy_yarn" and limit != routing["extended_context_tokens"]:
+                errors.append(f"policy_yarn: context {limit} must equal extended context {routing['extended_context_tokens']}")
+            elif required_context and (not isinstance(limit, int) or limit < required_context):
+                errors.append(f"{name}: context {limit} < required {required_context}")
+            print(canonical(check), flush=True)
+        write_json(ROOT / "runs/preflight" / f"ragu-{label}.json", {"checks": checks, "errors": errors})
+        if errors:
+            raise ValueError("Insufficient service context: " + "; ".join(errors))
         embedding = await client.post(config["embedding"]["base_url"].rstrip("/") + "/embeddings",
                                       json={"model": config["embedding"]["model"], "input": ["Пример личного факта"]})
         embedding.raise_for_status()
@@ -376,6 +429,7 @@ async def execute(args):
     if args.command == "preflight":
         await preflight(config, args.model)
         return
+    await preflight(config, args.model)
     harness = Harness(config, args.model)
     print(canonical({"run_folder": str(harness.folder)}), flush=True)
     try:
