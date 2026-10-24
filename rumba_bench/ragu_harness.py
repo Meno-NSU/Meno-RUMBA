@@ -40,6 +40,7 @@ from .data import ROOT, canonical, digest, read_json, read_jsonl, timestamp, wri
 from .pipeline import Generation, chunks, generation_parameters
 from .report import comparison, make_report
 from .upstream import load_official
+from .ragu_decoding import schema_grammar
 
 RAGU_REVISION = "abd3f2958c186dc624bbd42560ad6e1e7033efaf"
 
@@ -58,11 +59,12 @@ def generation_schema(output_schema, protocol):
     for field in ("entities", "relations"):
         if field in properties:
             properties[field]["maxItems"] = limits[field]
-    for definition in schema.get("$defs", {}).values():
-        for name, field in definition.get("properties", {}).items():
-            if field.get("type") == "string":
-                field["maxLength"] = limits["description_chars" if name == "description" else "name_chars"]
-                field["minLength"] = 1
+    if protocol["extraction_decoding"] == "bounded":
+        for definition in schema.get("$defs", {}).values():
+            for name, field in definition.get("properties", {}).items():
+                if field.get("type") == "string":
+                    field["maxLength"] = limits["description_chars" if name == "description" else "name_chars"]
+                    field["minLength"] = 1
     return schema
 
 
@@ -71,7 +73,11 @@ class ProtocolLLM(LLM):
 
     def __init__(self, endpoint, config, cache, *, answer=False):
         self.protocol = config["protocol"]
-        self.generator = Generation(endpoint, config["runtime"], cache, self.protocol)
+        # A server-side decoder change must invalidate even identical request
+        # bodies: old incomplete JSON must not be reused after a redeployment.
+        profile = self.protocol.get("server_structured_outputs")
+        identity = {**endpoint, "server_structured_outputs": profile} if profile else endpoint
+        self.generator = Generation(identity, config["runtime"], cache, self.protocol)
         self.semaphore = asyncio.Semaphore(config["runtime"]["concurrency"])
         self.max_tokens = self.protocol["answer_max_tokens" if answer else "extraction_max_tokens"]
         self.stop = self.protocol["answer_stop"] if answer else None
@@ -82,11 +88,14 @@ class ProtocolLLM(LLM):
         if kwargs:
             raise ValueError(f"Unspecified generation overrides: {sorted(kwargs)}")
         schema = generation_schema(output_schema, self.protocol)
+        constraint = None if schema is None else (
+            {"grammar": schema_grammar(schema, self.protocol["grammar_whitespace_chars"])}
+            if self.protocol["extraction_decoding"] == "grammar" else {"json": schema})
         async with self.semaphore:
             try:
                 raw = await asyncio.to_thread(
                     self.generator.call, conversation, self.max_tokens,
-                    stop=self.stop, seed=self.protocol["seed"], json_schema=schema,
+                    stop=self.stop, seed=self.protocol["seed"], structured_outputs=constraint,
                     allow_incomplete=output_schema is str,
                 )
                 self.calls.append(raw)
@@ -168,7 +177,7 @@ def manifest(config):
     return {"harness": "ragu-two-stage-local-rerank-v1", "ragu_revision": revision,
             "ragu_source_hash": digest({str(p.relative_to(source)): digest(p.read_text()) for p in sorted(source.rglob("*.py"))}),
             "runner_hashes": {name: digest((ROOT / "rumba_bench" / name).read_text()) for name in
-                              ("ragu_harness.py", "pipeline.py", "data.py", "upstream.py", "report.py")},
+                              ("ragu_harness.py", "ragu_decoding.py", "pipeline.py", "data.py", "upstream.py", "report.py")},
             "protocol": config["protocol"], "generation": generation_parameters(config["protocol"]),
             "embedding": config["embedding"], "reranker": config["reranker"],
             "dataset": read_json(ROOT / "data/manifest.json"), "official": read_json(ROOT / "vendor/rumba/manifest.json"),
@@ -180,8 +189,10 @@ def validate_config(config):
     if (protocol["temperature"], protocol["top_p"], protocol["seed"]) != (0, 1, 42):
         raise ValueError("This comparison requires greedy decoding and seed 42")
     generation_parameters(protocol)
-    if protocol["extraction_decoding"] not in ("free", "native", "bounded"):
-        raise ValueError("extraction_decoding must be free, native or bounded")
+    if protocol["extraction_decoding"] not in ("free", "native", "bounded", "grammar"):
+        raise ValueError("extraction_decoding must be free, native, bounded or grammar")
+    if type(protocol["grammar_whitespace_chars"]) is not int or not 0 <= protocol["grammar_whitespace_chars"] <= 16:
+        raise ValueError("grammar_whitespace_chars must be an integer in [0, 16]")
     limits = protocol["structured_limits"]
     if set(limits) != {"entities", "relations", "name_chars", "description_chars"} or any(type(v) is not int or v <= 0 for v in limits.values()):
         raise ValueError("structured_limits must contain four positive integer limits")

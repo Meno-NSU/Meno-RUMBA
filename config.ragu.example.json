@@ -74,6 +74,11 @@
       "relations": 16,
       "name_chars": 80,
       "description_chars": 200
+    },
+    "grammar_whitespace_chars": 8,
+    "server_structured_outputs": {
+      "backend": "xgrammar",
+      "disable_any_whitespace": true
     }
   }
 }

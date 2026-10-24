@@ -22,6 +22,7 @@ from ragu.storage.types import SparseEmbedding
 from rumba_bench.data import ROOT, read_json
 from rumba_bench.ragu_harness import (AuditedValidator, ProtocolLLM, SeparateQdrantStorage,
                                       answer_instruction, generation_schema, source_documents)
+from rumba_bench.ragu_decoding import schema_grammar
 
 
 class TinyEmbedder(Embedder):
@@ -103,6 +104,37 @@ async def test_transport_forwards_protocol_and_keeps_truncation(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_server_decoder_profile_invalidates_identical_request_cache(tmp_path):
+    config = read_json(ROOT / "config.ragu.example.json")
+    endpoint = {"model": "test", "base_url": "http://localhost/v1"}
+    calls, adapters = [], []
+
+    def reply(request):
+        calls.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "test", "object": "chat.completion", "created": 0, "model": "test",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": str(len(calls))}, "finish_reason": "stop"}]})
+
+    for profile in (True, False):
+        settings = {**config, "protocol": {**config["protocol"], "server_structured_outputs": {
+            "backend": "xgrammar", "disable_any_whitespace": profile}}}
+        adapter = ProtocolLLM(endpoint, settings, tmp_path, answer=True)
+        adapter.generator.client.close()
+        adapter.generator.client = OpenAI(base_url="http://localhost/v1", api_key="EMPTY",
+            http_client=httpx.Client(transport=httpx.MockTransport(reply)))
+        adapters.append(adapter)
+    try:
+        conversation = [{"role": "user", "content": "SAME QUESTION"}]
+        assert await adapters[0].chat_completion(conversation) == "1"
+        assert await adapters[1].chat_completion(conversation) == "2"
+        assert await adapters[0].chat_completion(conversation) == "1"
+        assert len(calls) == 2
+        assert "server_structured_outputs" not in calls[0]
+    finally:
+        for adapter in adapters:
+            adapter.close()
+
+
+@pytest.mark.asyncio
 async def test_incomplete_structured_extraction_is_an_audited_error(tmp_path):
     class Artifacts(BaseModel):
         entities: list[str]
@@ -133,7 +165,7 @@ def test_ontology_audit_preserves_native_decisions_and_is_json_serializable():
 
 def test_bounded_native_and_free_modes_preserve_upstream_contract():
     from ragu.common.prompts.default_models import EntitiesExtractionModel, RelationsExtractionModel
-    protocol = read_json(ROOT / "config.ragu.example.json")["protocol"]
+    protocol = {**read_json(ROOT / "config.ragu.example.json")["protocol"], "extraction_decoding": "bounded"}
     for model, field in ((EntitiesExtractionModel, "entities"), (RelationsExtractionModel, "relations")):
         schema = generation_schema(model, protocol)
         assert schema["properties"][field]["maxItems"] == 16
@@ -142,6 +174,45 @@ def test_bounded_native_and_free_modes_preserve_upstream_contract():
         assert "maxItems" not in model.model_json_schema()["properties"][field]
         assert generation_schema(model, {**protocol, "extraction_decoding": "native"}) == model.model_json_schema()
         assert generation_schema(model, {**protocol, "extraction_decoding": "free"}) is None
+
+
+def test_grammar_bounds_whitespace_and_arrays_without_clipping_descriptions():
+    from ragu.common.prompts.default_models import EntitiesExtractionModel, RelationsExtractionModel, EntityDescriptionModel
+    protocol = {**read_json(ROOT / "config.ragu.example.json")["protocol"], "extraction_decoding": "grammar"}
+    for model in (EntitiesExtractionModel, RelationsExtractionModel, EntityDescriptionModel):
+        schema = generation_schema(model, protocol)
+        grammar = schema_grammar(schema, whitespace_chars=8)
+        assert r"ws ::= [ \t\n\r]{0,8}" in grammar
+        assert "char*" in grammar and "maxLength" not in json.dumps(schema)
+        if model is not EntityDescriptionModel:
+            assert "{0,15}" in grammar
+    with pytest.raises(ValueError, match="positive maxItems"):
+        schema_grammar({"type": "array", "items": {"type": "string"}})
+    with pytest.raises(ValueError, match="String restrictions"):
+        schema_grammar({"type": "string", "maxLength": 5})
+
+
+@pytest.mark.asyncio
+async def test_native_ragu_schema_uses_grammar_transport(tmp_path):
+    from ragu.common.prompts.default_models import EntitiesExtractionModel
+    config = read_json(ROOT / "config.ragu.example.json")
+    config["protocol"]["extraction_decoding"] = "grammar"
+    adapter = ProtocolLLM({"model": "test", "base_url": "http://localhost/v1"}, config, tmp_path)
+    adapter.generator.client.close()
+    requests = []
+
+    def reply(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "test", "object": "chat.completion", "created": 0, "model": "test",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": '{"entities":[]}'}, "finish_reason": "stop"}]})
+
+    adapter.generator.client = OpenAI(base_url="http://localhost/v1", api_key="EMPTY",
+                                       http_client=httpx.Client(transport=httpx.MockTransport(reply)))
+    result = await adapter.chat_completion([{"role": "user", "content": "SOURCE"}], output_schema=EntitiesExtractionModel)
+    assert result.entities == []
+    assert set(requests[0]["structured_outputs"]) == {"grammar"}
+    assert requests[0]["repetition_penalty"] == 1.03 and requests[0]["seed"] == 42
+    adapter.close()
 
 
 @pytest.mark.asyncio

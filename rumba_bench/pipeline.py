@@ -84,13 +84,16 @@ class Generation:
         self.client = client_for(endpoint, runtime)
         self.sampling = generation_parameters(sampling)
 
-    def call(self, messages, max_tokens, stop=None, seed=42, json_schema=None, allow_incomplete=False):
+    def call(self, messages, max_tokens, stop=None, seed=42, json_schema=None, allow_incomplete=False, structured_outputs=None):
         request = {"model": self.endpoint["model"], "messages": messages, **self.sampling,
                    "max_tokens": max_tokens, "seed": seed}
         if stop:
             request["stop"] = stop
-        if json_schema is not None:
-            request["extra_body"] = {**request["extra_body"], "structured_outputs": {"json": json_schema}}
+        if json_schema is not None and structured_outputs is not None:
+            raise ValueError("Use either json_schema or structured_outputs")
+        constraint = {"json": json_schema} if json_schema is not None else structured_outputs
+        if constraint is not None:
+            request["extra_body"] = {**request["extra_body"], "structured_outputs": constraint}
         key = digest({"endpoint": self.endpoint, "request": request})
         path = self.cache / f"{key}.json"
         if path.exists():
