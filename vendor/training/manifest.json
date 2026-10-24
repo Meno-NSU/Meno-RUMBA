@@ -1,0 +1,33 @@
+{
+  "source": "Local llm-training export supplied for this benchmark",
+  "source_revision": null,
+  "license_declared": "MIT",
+  "author_declared": "Ivan Bondarenko",
+  "license_source": "llm-training/pyproject.toml [project]",
+  "files": {
+    "llm_training/__init__.py": {
+      "sha256": "a649a9d4c22589b9e7e14cc4b442179a2d5fd28dce1c99c8e06353c1fd6b9c5f"
+    },
+    "llm_training/schema.py": {
+      "sha256": "68be29705fef79f65da7642184d9aa2a58e8b2056e43c92eb4d09d8794d6d9d9"
+    },
+    "llm_training/extraction/__init__.py": {
+      "sha256": "d497dceecda7ae81f614d3cef3ede67dc3ff56c3a7787849f3ba04a481b4ef20"
+    },
+    "llm_training/extraction/ontology.py": {
+      "sha256": "3f65f56979953c967501bec163f588a4382b4ec6b057ff7439d95014abcebb86"
+    },
+    "llm_training/extraction/_nerel_bio_tables.py": {
+      "sha256": "41968715997a9c56084f7163f69c52df7ead457b826d374886d6f348ddc5bf52"
+    },
+    "llm_training/extraction/prompts.py": {
+      "sha256": "bc8314f47df3018b673e4a7b458768d72881d102c1476eb7b0ca9f19c6725a2b"
+    },
+    "llm_training/extraction/retrieval.py": {
+      "sha256": "dac473f62be55106ac985685e667246412e93fd4bcdb6c50e84872ee667a7eec"
+    },
+    "llm_training/loaders/_ragu_templates.py": {
+      "sha256": "379809710abd25f028d888db076217e1f07b978a9a9a632f21230ef9675557b7"
+    }
+  }
+}

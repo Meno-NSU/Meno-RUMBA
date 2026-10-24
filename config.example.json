@@ -1,0 +1,56 @@
+{
+  "training_source": "vendor/training",
+  "models": {
+    "meno-lite-0.2": {
+      "base_url": "http://localhost:8000/v1",
+      "model": "meno-lite-0.2",
+      "weights": "bond005/meno-lite-0.2; pin the exact weights revision before a scored run"
+    },
+    "meno-lite-0.1": null,
+    "qwen2.5-7b-instruct": null
+  },
+  "embedding": {
+    "backend": "openai",
+    "base_url": null,
+    "model": "intfloat/multilingual-e5-small",
+    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "device": "cpu",
+    "batch_size": 16,
+    "threads": 4,
+    "query_prefix": "query: ",
+    "passage_prefix": "passage: "
+  },
+  "judge": null,
+  "protocol": {
+    "seed": 42,
+    "temperature": 0,
+    "extraction_stage": "one_stage",
+    "extraction_decoding": "free",
+    "structured_limits": {
+      "entities": 16,
+      "relations": 16,
+      "name_chars": 80,
+      "description_chars": 200
+    },
+    "prompt_variant": 1,
+    "with_signatures": true,
+    "chunk_chars": 3500,
+    "chunk_overlap_chars": 200,
+    "extraction_max_tokens": 4096,
+    "answer_max_tokens": 256,
+    "answer_stop": [
+      "\n"
+    ],
+    "judge_max_tokens": 4096,
+    "top_k": 20,
+    "context_max_chars": 24000,
+    "candidate_pool": 100,
+    "history_policy": "all-provided-sessions-as-official-rag",
+    "memory": "extracted-entities-and-relations-only"
+  },
+  "runtime": {
+    "concurrency": 2,
+    "timeout_s": 300,
+    "max_retries": 2
+  }
+}

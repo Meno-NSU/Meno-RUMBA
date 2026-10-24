@@ -9,3 +9,5 @@ runs/
 .env
 .env.*
 llm-training/
+config.json
+config.local.json

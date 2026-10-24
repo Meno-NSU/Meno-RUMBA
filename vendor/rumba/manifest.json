@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/ai-forever/RUMBA",
+  "commit": "a20471ab5bb9d6d0b3bc8a263495a799868e1a3b",
+  "files": {
+    "rumba_ru.py": {
+      "path": "evaluation/lighteval_ext/custom_tasks/rumba_ru.py",
+      "sha256": "96f3efc1cb99d55d435b6c7f42a8a9d3d120ec4043e7111e33b038c5aca13adc"
+    },
+    "prompts.py": {
+      "path": "evaluation/prompts.py",
+      "sha256": "a23e399ec0cf281db4e0564cf676cdb57a07a7c53b58ed99a058916bdc0d2c80"
+    },
+    "LICENSE.txt": {
+      "path": "LICENSE.txt",
+      "sha256": "46666a3abcb085158f4cd06f27dcd10226b0e1a39609e663558f69ef8e71cc10"
+    }
+  },
+  "dataset_revision": "d0480d86d4ef20701d8538dd3d50528ee065ab63"
+}
