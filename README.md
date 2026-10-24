@@ -37,7 +37,29 @@ cp config.ragu.example.json config.ragu.json
 
 Это правило действует на извлечение, проверки, суммаризацию и ответы. В ответах и отчётах сборки сохраняется выбранный маршрут. `protocol.context_routing` фиксирует границы одинаково для всех трёх моделей; кэши обычного и YaRN-сервера разделены по endpoint и RoPE-профилю.
 
-Для Qwen2/Qwen2.5 с исходным контекстом 32 768 подготовлен [scripts/launch_split_context.sh](scripts/launch_split_context.sh). Его нужно перенести на GPU-сервер и запустить в активированном vLLM-окружении, указав локальный checkpoint и served name. Скрипт проверяет исходный конфиг, сохраняет checkpoint `rope_theta`, запускает обычный сервер на 9022 и YaRN на 9025 последовательно. В vLLM 0.29 используется `--hf-overrides` с `rope_parameters`; старый `--rope-scaling` больше не поддерживается. Исходный config.json не изменяется. Пример вызова с собственными путями:
+Все серверные скрипты находятся в репозитории, в `scripts/`, и жёстко задают `CUDA_VISIBLE_DEVICES=1` до загрузки конфигурации и при каждом запуске vLLM. Переменная `GPU_ID` не используется. Файлы скачиваются на сервер непосредственно с GitHub; копировать их с локальной машины или клонировать репозиторий не требуется.
+
+- [launch_meno2.sh](scripts/launch_meno2.sh) — короткая команда запуска текущего профиля Meno.
+- [restart_meno2_split_context.sh](scripts/restart_meno2_split_context.sh) — окружение, checkpoint и PID-файлы Meno-Lite-0.2.
+- [launch_split_context.sh](scripts/launch_split_context.sh) — обычный и YaRN экземпляры одних весов.
+- [launch_reranker_8192.sh](scripts/launch_reranker_8192.sh) — перезапуск реранкера с контекстом 8192.
+
+В серверном каталоге, где уже находится `vllm_0_29_0/`, выполните:
+
+```sh
+(
+set -e
+for script in launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_reranker_8192.sh; do
+  curl -fsSL "https://raw.githubusercontent.com/Meno-NSU/Meno-RUMBA/main/scripts/$script" -o "$script"
+done
+CUDA_VISIBLE_DEVICES=1 bash launch_reranker_8192.sh
+CUDA_VISIBLE_DEVICES=1 bash launch_meno2.sh
+)
+```
+
+По умолчанию веса находятся в `../models/meno-lite-0.2` и `../models/bge-reranker-v2-m3` относительно серверного каталога запуска. Другие пути задаются через `MENO2_MODEL_PATH`, `RERANKER_MODEL_PATH`, `VLLM_ENV_DIR`, `VLLM_LAUNCH_DIR`. Обёртки находят остальные скрипты рядом с собой. Для реранкера используется `vllm_process_reranker.txt`; если прежний PID записан в другом файле, задайте `RERANKER_PID_FILE`. Неучтённый слушатель на 9024 скрипт не завершает, а выдаёт явную инструкцию.
+
+Для Qwen2/Qwen2.5 с исходным контекстом 32 768 общий launcher проверяет исходный конфиг, сохраняет checkpoint `rope_theta` и запускает обычный сервер на 9022 и YaRN на 9025 последовательно. В vLLM 0.29 используется `--hf-overrides` с `rope_parameters`; старый `--rope-scaling` больше не поддерживается. Исходный config.json не изменяется. Пример вызова с собственными путями:
 
 ```sh
 VLLM_BIN=/path/to/venv/bin/vllm \

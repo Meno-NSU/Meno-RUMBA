@@ -2,11 +2,11 @@
 # Run on the GPU server with its vLLM environment activated.
 # Usage: VLLM_BIN=/path/to/vllm bash launch_split_context.sh MODEL_PATH MODEL_NAME
 set -euo pipefail
+export CUDA_VISIBLE_DEVICES=1
 
 MODEL_PATH=${1:?Pass the local checkpoint directory}
 MODEL_NAME=${2:?Pass the served model name}
 VLLM_BIN=${VLLM_BIN:-vllm}
-GPU_ID=${GPU_ID:-1}
 NATIVE_PORT=${NATIVE_PORT:-9022}
 YARN_PORT=${YARN_PORT:-9025}
 MODEL_TAG=${MODEL_NAME//[^a-zA-Z0-9._-]/_}
@@ -68,7 +68,7 @@ stop_service "$YARN_PID_FILE"
 sleep 3
 
 # Fractions refer to the entire GPU: 0.40 + 0.45 = 0.85 combined.
-nohup env CUDA_VISIBLE_DEVICES="$GPU_ID" "$VLLM_BIN" serve "$MODEL_PATH" \
+nohup env CUDA_VISIBLE_DEVICES=1 "$VLLM_BIN" serve "$MODEL_PATH" \
   --served-model-name "$MODEL_NAME" --host 0.0.0.0 --port "$NATIVE_PORT" \
   --dtype half --seed 42 --max-model-len 32768 --gpu-memory-utilization 0.40 \
   --max-num-seqs 16 --max-num-batched-tokens 16384 \
@@ -79,7 +79,7 @@ echo $! > "$NATIVE_PID_FILE"
 wait_ready "$NATIVE_PORT" "$NATIVE_PID_FILE" "$NATIVE_LOG"
 
 # Launch sequentially so profiling does not race between the two executors.
-nohup env CUDA_VISIBLE_DEVICES="$GPU_ID" "$VLLM_BIN" serve "$MODEL_PATH" \
+nohup env CUDA_VISIBLE_DEVICES=1 "$VLLM_BIN" serve "$MODEL_PATH" \
   --served-model-name "$MODEL_NAME" --host 0.0.0.0 --port "$YARN_PORT" \
   --dtype half --seed 42 --max-model-len 65536 --gpu-memory-utilization 0.45 \
   --max-num-seqs 4 --max-num-batched-tokens 8192 \
