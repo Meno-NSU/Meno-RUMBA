@@ -1,0 +1,479 @@
+{
+  "metadata": {
+    "run_id": "ragu-722050e52edfe4aa",
+    "code_revision": "6985349662a2a3e546d9ca00378a19f7c68e0707",
+    "completed_at_local": "2026-10-25T01:28:31.569012+07:00",
+    "harness": "ragu-two-stage-local-rerank-v1",
+    "ragu_revision": "abd3f2958c186dc624bbd42560ad6e1e7033efaf",
+    "ragu_source_hash": "e10fa69d8aefc6df26fded0b2c70f8c9b64610ba2918f52b2a48f39a18830418",
+    "runner_hashes": {
+      "ragu_harness.py": "9b13048956a319ecb1f78375fd14ef92983114f7c1499ae43df0353fba0fea2b",
+      "ragu_decoding.py": "02420b22078923fecc0bc46dea7e4036258ddf6706e6fe0a01ee1c865279f315",
+      "ragu_routing.py": "e20c68cc3a6a9f09858daaad9f905d38c0484becd7c9e65ec6f06e5d221aca54",
+      "pipeline.py": "fa9e402fc6107463749b6ba9cd88021bf1fe2704468ab2f8011a5717a44b9390",
+      "data.py": "38c2206ec94b2b23d8eaa5fae889ac8eb5c136ef0fc28fe5530ebdb523a2a13f",
+      "upstream.py": "09c7a634af6e3b44960786d566408a82a0aced0a9d654c8b3078233bcf9e0ded",
+      "report.py": "6cff44b0f8c4c11c7b9b005ca44ff20361487d7d53df4cd9b8f26c8082f202e5"
+    },
+    "dataset": {
+      "dataset": "ai-forever/RUMBA",
+      "config": "ru",
+      "split": "test",
+      "revision": "d0480d86d4ef20701d8538dd3d50528ee065ab63",
+      "questions_sha256": "f8a1d02ae5b73cab0f2dfac9f3f805b7822bb7485c4ec0ff8c9a9c26b9bd3bec",
+      "histories_sha256": "73cc1371b0d44498fcb9e4f76ae11195dbd77e451a8b0523f26dc68445af3504",
+      "questions": 1543,
+      "users": 85,
+      "sessions": 4031,
+      "cells": {
+        "atemporal × single": 678,
+        "atemporal × multi": 450,
+        "temporal × multi": 154,
+        "temporal × single": 261
+      },
+      "pilot": {
+        "seed": 42,
+        "ids": [
+          "65|q12",
+          "44|q3",
+          "65|q8",
+          "61|q9",
+          "61|q7",
+          "44|q7",
+          "61|q13",
+          "44|q16",
+          "65|q3",
+          "65|q19",
+          "44|q10",
+          "65|q21",
+          "61|q12",
+          "65|q1",
+          "44|q8",
+          "44|q2",
+          "65|q0",
+          "65|q9",
+          "65|q20",
+          "65|q6",
+          "61|q18",
+          "61|q0",
+          "65|q7",
+          "44|q6",
+          "65|q11",
+          "65|q14",
+          "61|q16",
+          "61|q17",
+          "61|q14",
+          "61|q4",
+          "44|q13",
+          "61|q11",
+          "44|q17",
+          "61|q6",
+          "65|q15",
+          "44|q4",
+          "65|q2",
+          "65|q17",
+          "44|q12",
+          "65|q4",
+          "65|q5",
+          "65|q10",
+          "61|q10",
+          "65|q18",
+          "61|q1",
+          "44|q15",
+          "44|q14",
+          "61|q19",
+          "44|q1",
+          "61|q8"
+        ],
+        "users": [
+          "user_44",
+          "user_61",
+          "user_65"
+        ],
+        "cells": {
+          "atemporal × multi": 13,
+          "temporal × single": 12,
+          "temporal × multi": 12,
+          "atemporal × single": 13
+        },
+        "selection": "few-user pool; balanced temporal × scope; not a representative global estimate"
+      }
+    },
+    "official": {
+      "repository": "https://github.com/ai-forever/RUMBA",
+      "commit": "a20471ab5bb9d6d0b3bc8a263495a799868e1a3b",
+      "files": {
+        "rumba_ru.py": {
+          "path": "evaluation/lighteval_ext/custom_tasks/rumba_ru.py",
+          "sha256": "96f3efc1cb99d55d435b6c7f42a8a9d3d120ec4043e7111e33b038c5aca13adc"
+        },
+        "prompts.py": {
+          "path": "evaluation/prompts.py",
+          "sha256": "a23e399ec0cf281db4e0564cf676cdb57a07a7c53b58ed99a058916bdc0d2c80"
+        },
+        "LICENSE.txt": {
+          "path": "LICENSE.txt",
+          "sha256": "46666a3abcb085158f4cd06f27dcd10226b0e1a39609e663558f69ef8e71cc10"
+        }
+      },
+      "dataset_revision": "d0480d86d4ef20701d8538dd3d50528ee065ab63"
+    },
+    "model_weights_revision": null,
+    "model_weights_note": "Operator-provided meno-lite-0.2 checkpoint; exact weights revision unverified.",
+    "latency_note": "Successful generations and embeddings were reused from cache; timings are not a cold performance benchmark."
+  },
+  "protocol": {
+    "seed": 42,
+    "temperature": 0,
+    "top_p": 1.0,
+    "repetition_penalty": 1.03,
+    "extraction_max_tokens": 4096,
+    "answer_max_tokens": 256,
+    "answer_stop": [
+      "\n"
+    ],
+    "chunk_chars": 3500,
+    "chunk_overlap_chars": 200,
+    "entity_validation": true,
+    "relation_validation": true,
+    "icl": {
+      "enabled": true,
+      "num_examples": 1,
+      "selection_strategy": "hybrid"
+    },
+    "builder": {
+      "use_llm_summarization": true,
+      "use_clustering": false,
+      "build_only_vector_context": false,
+      "make_community_summary": false,
+      "remove_isolated_nodes": false,
+      "summarize_only_if_more_than": 7,
+      "random_seed": 42
+    },
+    "search": {
+      "top_k": 20,
+      "rerank_top_k": 5,
+      "use_summary": false,
+      "use_chunks": true
+    },
+    "context_max_tokens": 12000,
+    "history_policy": "all-provided-sessions-as-official-rag",
+    "judge_max_tokens": 4096,
+    "extraction_decoding": "bounded",
+    "structured_limits": {
+      "entities": 16,
+      "relations": 16,
+      "name_chars": 80,
+      "description_chars": 200
+    },
+    "grammar_whitespace_chars": 8,
+    "server_structured_outputs": {
+      "backend": "xgrammar",
+      "disable_any_whitespace": true
+    },
+    "context_routing": {
+      "enabled": true,
+      "native_context_tokens": 32768,
+      "extended_context_tokens": 65536
+    }
+  },
+  "generation": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
+    "extra_body": {
+      "top_k": -1,
+      "min_p": 0.0,
+      "repetition_penalty": 1.03
+    }
+  },
+  "metrics": {
+    "model": "meno-lite-0.2",
+    "suite": "pilot",
+    "status": "judge_pending",
+    "overall": {
+      "n": 50,
+      "judged": 0,
+      "rumba_metric": null,
+      "f1": 0.19015460875955628,
+      "retrieval_recall": 0.8266666666666667,
+      "all_evidence_retrieved": 0.74,
+      "seconds": 0.7165688525002042
+    },
+    "temporal_x_session_scope": {
+      "atemporal × multi": {
+        "n": 13,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.19061771561771562,
+        "retrieval_recall": 0.7692307692307693,
+        "all_evidence_retrieved": 0.6153846153846154,
+        "seconds": 0.6978922852302696
+      },
+      "atemporal × single": {
+        "n": 13,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.2191142191142191,
+        "retrieval_recall": 0.9230769230769231,
+        "all_evidence_retrieved": 0.9230769230769231,
+        "seconds": 0.7973511569233289
+      },
+      "temporal × multi": {
+        "n": 12,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.14689706428836863,
+        "retrieval_recall": 0.7777777777777778,
+        "all_evidence_retrieved": 0.5833333333333334,
+        "seconds": 0.7759255035004268
+      },
+      "temporal × single": {
+        "n": 12,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.20153754291685327,
+        "retrieval_recall": 0.8333333333333334,
+        "all_evidence_retrieved": 0.8333333333333334,
+        "seconds": 0.5899309862506925
+      }
+    },
+    "semantic": {
+      "Abstention": {
+        "n": 3,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.3333333333333333,
+        "retrieval_recall": 0.6666666666666666,
+        "all_evidence_retrieved": 0.6666666666666666,
+        "seconds": 0.8389289303328648
+      },
+      "Arithmetic": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 0.75,
+        "all_evidence_retrieved": 0.5,
+        "seconds": 0.4783972499972151
+      },
+      "AsstQuery": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.3806818181818182,
+        "retrieval_recall": 0.5,
+        "all_evidence_retrieved": 0.5,
+        "seconds": 0.8935163334972458
+      },
+      "CalendarUnderstanding": {
+        "n": 3,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.06666666666666667,
+        "retrieval_recall": 0.6666666666666666,
+        "all_evidence_retrieved": 0.6666666666666666,
+        "seconds": 0.6361610970003918
+      },
+      "ComplexRelations": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.06896551724137931,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.6488085210003192
+      },
+      "DateExtraction": {
+        "n": 14,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.25071077990332646,
+        "retrieval_recall": 0.8214285714285714,
+        "all_evidence_retrieved": 0.7142857142857143,
+        "seconds": 0.7023862202861763
+      },
+      "DeleteInfo": {
+        "n": 4,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.25,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.7757366144996922
+      },
+      "OpenDomainType": {
+        "n": 1,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.5399907500031986
+      },
+      "Ordering": {
+        "n": 1,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.6666666666666666,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.517899500002386
+      },
+      "SocialRelationship": {
+        "n": 1,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 1.0,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 1.2225645830039866
+      },
+      "StaticUser": {
+        "n": 8,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.11231060606060606,
+        "retrieval_recall": 0.8125,
+        "all_evidence_retrieved": 0.625,
+        "seconds": 0.8184128541261089
+      },
+      "TemporalCommonsense": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 0.75,
+        "all_evidence_retrieved": 0.5,
+        "seconds": 0.4752221255002951
+      },
+      "TemporallyModifiedGeneralReasoning": {
+        "n": 3,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.1111111111111111,
+        "retrieval_recall": 0.7777777777777778,
+        "all_evidence_retrieved": 0.6666666666666666,
+        "seconds": 0.8001087363348537
+      },
+      "UpdatingInfo": {
+        "n": 4,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.5617116664980131
+      }
+    },
+    "judge_parse_errors": 0
+  },
+  "qc": {
+    "expected_questions": 50,
+    "answered_questions": 50,
+    "same_question_ids": true,
+    "truncated_answers": [],
+    "llm_extraction_errors": 0,
+    "all_graphs_consistent": true,
+    "all_source_chunks_stored": true,
+    "visible_evidence_recall": 0.7766666666666667,
+    "judge_pending": true
+  },
+  "additional_qc": {
+    "empty_predictions": 0,
+    "duplicate_question_ids": 0,
+    "answers_per_user": {
+      "user_44": 14,
+      "user_61": 16,
+      "user_65": 20
+    },
+    "answer_routes": {
+      "native": 50
+    },
+    "max_answer_prompt_tokens": 11775,
+    "all_evidence_sessions_retrieved_questions": 37,
+    "all_evidence_sessions_with_a_complete_chunk_in_prompt_questions": 34,
+    "extraction_routes": {
+      "native": 1506,
+      "yarn": 182
+    },
+    "ontology_relation_candidates": 6218,
+    "ontology_relations_accepted_before_merge": 1671,
+    "ontology_relations_dropped_fraction": 0.7312640720488903
+  },
+  "index": [
+    {
+      "user": "user_44",
+      "sessions": 40,
+      "chunks": 132,
+      "stored_chunks": 132,
+      "entities": 1486,
+      "relations": 434,
+      "llm_calls": 542,
+      "routing": {
+        "native": 474,
+        "yarn": 68
+      },
+      "consistent": true,
+      "all_source_chunks_stored": true,
+      "llm_errors": 0,
+      "ontology_relation_candidates": 2024,
+      "ontology_relations_accepted_before_merge": 458,
+      "ontology_relations_dropped": {
+        "constraint_violation": 1011,
+        "dangling_endpoint": 420,
+        "self_loop": 96,
+        "unknown_relation_type": 39
+      }
+    },
+    {
+      "user": "user_61",
+      "sessions": 43,
+      "chunks": 123,
+      "stored_chunks": 123,
+      "entities": 1334,
+      "relations": 496,
+      "llm_calls": 510,
+      "routing": {
+        "native": 444,
+        "yarn": 66
+      },
+      "consistent": true,
+      "all_source_chunks_stored": true,
+      "llm_errors": 0,
+      "ontology_relation_candidates": 1860,
+      "ontology_relations_accepted_before_merge": 567,
+      "ontology_relations_dropped": {
+        "constraint_violation": 846,
+        "dangling_endpoint": 307,
+        "self_loop": 118,
+        "unknown_relation_type": 22
+      }
+    },
+    {
+      "user": "user_65",
+      "sessions": 72,
+      "chunks": 156,
+      "stored_chunks": 156,
+      "entities": 1662,
+      "relations": 582,
+      "llm_calls": 636,
+      "routing": {
+        "native": 588,
+        "yarn": 48
+      },
+      "consistent": true,
+      "all_source_chunks_stored": true,
+      "llm_errors": 0,
+      "ontology_relation_candidates": 2334,
+      "ontology_relations_accepted_before_merge": 646,
+      "ontology_relations_dropped": {
+        "constraint_violation": 1148,
+        "dangling_endpoint": 424,
+        "self_loop": 101,
+        "unknown_relation_type": 15
+      }
+    }
+  ]
+}
