@@ -205,11 +205,11 @@
   "metrics": {
     "model": "meno-lite-0.1",
     "suite": "pilot",
-    "status": "judge_pending",
+    "status": "scored",
     "overall": {
       "n": 50,
-      "judged": 0,
-      "rumba_metric": null,
+      "judged": 50,
+      "rumba_metric": 0.32,
       "f1": 0.1285059901338971,
       "retrieval_recall": 0.6366666666666667,
       "all_evidence_retrieved": 0.5,
@@ -218,8 +218,8 @@
     "temporal_x_session_scope": {
       "atemporal × multi": {
         "n": 13,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 13,
+        "rumba_metric": 0.23076923076923078,
         "f1": 0.06526806526806526,
         "retrieval_recall": 0.5769230769230769,
         "all_evidence_retrieved": 0.3076923076923077,
@@ -227,8 +227,8 @@
       },
       "atemporal × single": {
         "n": 13,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 13,
+        "rumba_metric": 0.46153846153846156,
         "f1": 0.20745920745920746,
         "retrieval_recall": 0.6923076923076923,
         "all_evidence_retrieved": 0.6923076923076923,
@@ -236,8 +236,8 @@
       },
       "temporal × multi": {
         "n": 12,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 12,
+        "rumba_metric": 0.25,
         "f1": 0.03333333333333333,
         "retrieval_recall": 0.6111111111111112,
         "all_evidence_retrieved": 0.3333333333333333,
@@ -245,8 +245,8 @@
       },
       "temporal × single": {
         "n": 12,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 12,
+        "rumba_metric": 0.3333333333333333,
         "f1": 0.20665374677002585,
         "retrieval_recall": 0.6666666666666666,
         "all_evidence_retrieved": 0.6666666666666666,
@@ -256,8 +256,8 @@
     "semantic": {
       "Abstention": {
         "n": 3,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 3,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 0.6666666666666666,
         "all_evidence_retrieved": 0.6666666666666666,
@@ -265,8 +265,8 @@
       },
       "Arithmetic": {
         "n": 2,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 2,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 0.25,
         "all_evidence_retrieved": 0,
@@ -274,8 +274,8 @@
       },
       "AsstQuery": {
         "n": 2,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 2,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 0.25,
         "all_evidence_retrieved": 0,
@@ -283,8 +283,8 @@
       },
       "CalendarUnderstanding": {
         "n": 3,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 3,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 0.5,
         "all_evidence_retrieved": 0.3333333333333333,
@@ -292,8 +292,8 @@
       },
       "ComplexRelations": {
         "n": 2,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 2,
+        "rumba_metric": 0,
         "f1": 0.023255813953488372,
         "retrieval_recall": 0.75,
         "all_evidence_retrieved": 0.5,
@@ -301,8 +301,8 @@
       },
       "DateExtraction": {
         "n": 14,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 14,
+        "rumba_metric": 0.5,
         "f1": 0.20238095238095238,
         "retrieval_recall": 0.7142857142857143,
         "all_evidence_retrieved": 0.6428571428571429,
@@ -310,8 +310,8 @@
       },
       "DeleteInfo": {
         "n": 4,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 4,
+        "rumba_metric": 0.25,
         "f1": 0.16666666666666666,
         "retrieval_recall": 0.5,
         "all_evidence_retrieved": 0.25,
@@ -319,8 +319,8 @@
       },
       "OpenDomainType": {
         "n": 1,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 1,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 1.0,
         "all_evidence_retrieved": 1,
@@ -328,8 +328,8 @@
       },
       "Ordering": {
         "n": 1,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 1,
+        "rumba_metric": 1,
         "f1": 0.6666666666666666,
         "retrieval_recall": 1.0,
         "all_evidence_retrieved": 1,
@@ -337,8 +337,8 @@
       },
       "SocialRelationship": {
         "n": 1,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 1,
+        "rumba_metric": 1,
         "f1": 1.0,
         "retrieval_recall": 1.0,
         "all_evidence_retrieved": 1,
@@ -346,8 +346,8 @@
       },
       "StaticUser": {
         "n": 8,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 8,
+        "rumba_metric": 0.5,
         "f1": 0.15151515151515152,
         "retrieval_recall": 0.6875,
         "all_evidence_retrieved": 0.5,
@@ -355,8 +355,8 @@
       },
       "TemporalCommonsense": {
         "n": 2,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 2,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 0.75,
         "all_evidence_retrieved": 0.5,
@@ -364,8 +364,8 @@
       },
       "TemporallyModifiedGeneralReasoning": {
         "n": 3,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 3,
+        "rumba_metric": 0,
         "f1": 0.0,
         "retrieval_recall": 0.2777777777777778,
         "all_evidence_retrieved": 0,
@@ -373,8 +373,8 @@
       },
       "UpdatingInfo": {
         "n": 4,
-        "judged": 0,
-        "rumba_metric": null,
+        "judged": 4,
+        "rumba_metric": 0.5,
         "f1": 0.0,
         "retrieval_recall": 0.75,
         "all_evidence_retrieved": 0.75,
@@ -392,7 +392,10 @@
     "all_graphs_consistent": true,
     "all_source_chunks_stored": true,
     "visible_evidence_recall": 0.6366666666666666,
-    "judge_pending": true
+    "judge_pending": false,
+    "judged_questions": 50,
+    "judge_parse_errors": 0,
+    "truncated_judge_responses": []
   },
   "additional_qc": {
     "empty_predictions": 0,
@@ -505,5 +508,63 @@
     "observed_answer_seconds_per_question": 0.5409330083998793,
     "projected_full_with_answers_hours": 8.048668964833755,
     "note": "Linear planning estimate from three pilot users with caches enabled; history complexity and generated artifacts change runtime. Pollux is excluded."
+  },
+  "judge_phase": {
+    "source_model": "ai-forever/pollux-judge-32b",
+    "served_model": "pollux-judge-32b",
+    "checkpoint_revision": null,
+    "checkpoint_revision_note": "Operator-provided checkpoint; exact weights revision unverified.",
+    "server_max_model_len": 8192,
+    "seed": 42,
+    "max_tokens": 4096,
+    "sampling": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "extra_body": {
+        "top_k": -1,
+        "min_p": 0.0,
+        "repetition_penalty": 1.0
+      }
+    },
+    "completed_at_local": "2026-10-25T03:54:48.490418+07:00",
+    "scope": [
+      "meno-lite-0.1",
+      "meno-lite-0.2"
+    ],
+    "smoke_questions_total": 8,
+    "audit": {
+      "answers": 50,
+      "judged": 50,
+      "official_prompt_and_parser_match": true,
+      "answer_files_unchanged": true,
+      "parse_errors": 0,
+      "truncated_judge_responses": 0,
+      "verdict_counts": {
+        "0": 27,
+        "1": 7,
+        "2": 13,
+        "3": 3
+      },
+      "token_usage": {
+        "prompt_tokens": 13568,
+        "completion_tokens": 6121,
+        "total_tokens": 19689
+      },
+      "mean_request_seconds": 3.1058562657608126,
+      "max_request_seconds": 5.192604625000968,
+      "scoring_wall_seconds_excluding_smoke": 39.25060674999986,
+      "system_fingerprints": [
+        "vllm-0.29.0-10556d5f"
+      ]
+    },
+    "runner_revision": "f8b12c2fd7df8f25b3d735967c4ef196d19286aa",
+    "runner_sha256": {
+      "cli.py": "a3667313921cdd0e014174323257dc59a99a1daa8280b8ced2f351a80fd49961",
+      "pipeline.py": "04d1ca413abbf7ad38f7ec555da964686709ead3c33b03af1c12b7067ad800bc",
+      "upstream.py": "d94369d38aa9fd55d3ecc1905f4c45d88fd57464378541a9bacda369720c0e8a",
+      "report.py": "aa1945d08311765cadc33112466fc5fd240247bbd85dd907f9fa82f5d70dab5a"
+    }
   }
 }
