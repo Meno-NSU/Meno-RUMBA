@@ -1,6 +1,6 @@
 # Meno-RUMBA
 
-Бенчмарк памяти Meno-Lite-0.1, Meno-Lite-0.2 и Qwen2.5-7B-Instruct на русском `test` [RUMBA](https://github.com/ai-forever/RUMBA): 1 543 вопроса. Основной эксперимент использует настоящий [RAGU](https://github.com/RaguTeam/RAGU), подключённый субмодулем в `third_party/RAGU` на ревизии `abd3f2958c186dc624bbd42560ad6e1e7033efaf`.
+Бенчмарк памяти Meno-Lite-0.1, Meno-Lite-0.2 и Qwen3.5-9B на русском `test` [RUMBA](https://github.com/ai-forever/RUMBA): 1 543 вопроса. Основной эксперимент использует настоящий [RAGU](https://github.com/RaguTeam/RAGU), подключённый субмодулем в `third_party/RAGU` на ревизии `abd3f2958c186dc624bbd42560ad6e1e7033efaf`. Qwen3.5-9B заменяет ранее запланированный Qwen2.5-7B-Instruct; исторический отчёт Meno-Lite-0.2 сохраняет исходные метаданные.
 
 Истории → `TwoStageArtifactsExtractorLLM` с NEREL → граф и гибридный индекс BM25 + BGE-M3 → `LocalSearchEngine` с BGE reranker → ответ оцениваемой модели. Все нейросетевые модели работают на удалённых серверах. Для каждой оцениваемой модели извлечение выполняется независимо; каждый пользователь имеет отдельный граф.
 
@@ -29,12 +29,12 @@ cp config.ragu.example.json config.ragu.json
 
 ### Контекст и YaRN
 
-Короткие запросы обслуживает отдельный экземпляр модели без YaRN; только длинные направляются в другой экземпляр тех же весов с YaRN ×2. Один сервер со статическим YaRN применял бы масштабирование и к коротким запросам, поэтому для этого протокола используются два endpoint на модель.
+Короткие запросы обслуживает отдельный экземпляр модели без YaRN; длинные направляются в другой экземпляр тех же весов. Для Meno на Qwen2 используется YaRN ×2 только у длинного endpoint. Для Qwen3.5-9B оба лимита 32768/65536 помещаются в штатное окно 262144, поэтому оба endpoint работают без YaRN. Общий бюджет запроса остаётся одинаковым для трёх моделей. Историческое имя маршрута `yarn` в текущем JSON означает второй endpoint; фактический RoPE-профиль берётся из команды запуска и `long_context_models.*.rope_profile`.
 
-`models` содержит обычные endpoint, `long_context_models` — YaRN endpoint с тем же served model name и теми же весами. Клиент вызывает `/tokenize` обычного сервера с реальными chat messages и generation prompt, кэширует точный счётчик и прибавляет `max_tokens`:
+`models` содержит обычные endpoint, `long_context_models` — длинные endpoint с тем же served model name и теми же весами. Клиент вызывает `/tokenize` обычного сервера с реальными chat messages и generation prompt, кэширует точный счётчик и прибавляет `max_tokens`:
 
 - бюджет ≤ 32 768 → обычный сервер;
-- 32 768 < бюджет ≤ 65 536 → YaRN-сервер;
+- 32 768 < бюджет ≤ 65 536 → длинный сервер;
 - бюджет > 65 536 → явная ошибка, без скрытого усечения.
 
 Это правило действует на извлечение, проверки, суммаризацию и ответы. В ответах и отчётах сборки сохраняется выбранный маршрут. `protocol.context_routing` фиксирует границы одинаково для всех трёх моделей; кэши обычного и YaRN-сервера разделены по endpoint и RoPE-профилю.
@@ -44,6 +44,8 @@ cp config.ragu.example.json config.ragu.json
 Все серверные скрипты находятся в репозитории, в `scripts/`, и жёстко задают `CUDA_VISIBLE_DEVICES=1` до загрузки конфигурации и при каждом запуске vLLM. Переменная `GPU_ID` не используется. Файлы скачиваются на сервер непосредственно с GitHub; копировать их с локальной машины или клонировать репозиторий не требуется.
 
 - [launch_meno2.sh](scripts/launch_meno2.sh) — короткая команда запуска текущего профиля Meno.
+- [launch_meno1.sh](scripts/launch_meno1.sh) — Meno-Lite-0.1 из `../models/meno-lite-0.1`, served name `meno-lite-0.1`.
+- [launch_qwen35_9b.sh](scripts/launch_qwen35_9b.sh) — Qwen3.5-9B из `../models/Qwen3.5-9B`, served name `Qwen3.5-9B`.
 - [restart_meno2_split_context.sh](scripts/restart_meno2_split_context.sh) — окружение, checkpoint и PID-файлы Meno-Lite-0.2.
 - [launch_split_context.sh](scripts/launch_split_context.sh) — обычный и YaRN экземпляры одних весов.
 - [launch_reranker_8192.sh](scripts/launch_reranker_8192.sh) — перезапуск реранкера с контекстом 8192.
@@ -58,7 +60,7 @@ cp config.ragu.example.json config.ragu.json
 set -e
 LAUNCHER_REF=main
 LAUNCHER_API=https://api.github.com/repos/Meno-NSU/Meno-RUMBA/contents/scripts
-for script in server_process.py server_logging.sh launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_reranker_8192.sh launch_embedder_8192.sh; do
+for script in server_process.py server_logging.sh launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_meno1.sh launch_qwen35_9b.sh launch_reranker_8192.sh launch_embedder_8192.sh; do
   curl -4 --http1.1 -fLsS --retry 4 --retry-all-errors \
     -H 'Accept: application/vnd.github.raw+json' \
     "$LAUNCHER_API/$script?ref=$LAUNCHER_REF" -o "$script.new"
@@ -76,12 +78,18 @@ CUDA_VISIBLE_DEVICES=1 bash launch_meno2.sh
 
 По умолчанию веса находятся в `../models/meno-lite-0.2`, `../models/bge-reranker-v2-m3` и `../models/bge-m3` относительно серверного каталога запуска. Другие пути задаются через `MENO2_MODEL_PATH`, `RERANKER_MODEL_PATH`, `EMBEDDER_MODEL_PATH`, `VLLM_ENV_DIR`, `VLLM_LAUNCH_DIR`. Обёртки находят остальные скрипты рядом с собой. Для реранкера используется `vllm_process_reranker.txt`, для эмбеддера — `vllm_process_embedder.txt`; если прежний PID записан в другом файле, задайте `RERANKER_PID_FILE` или `EMBEDDER_PID_FILE`. Неучтённые слушатели скрипты не завершают, а выдают явную инструкцию.
 
+Для переключения генератора выполните **одну** из команд: `CUDA_VISIBLE_DEVICES=1 bash launch_meno1.sh` или `CUDA_VISIBLE_DEVICES=1 bash launch_qwen35_9b.sh`. Пути можно переопределить через `MENO1_MODEL_PATH` и `QWEN35_MODEL_PATH`. После проверки локального checkpoint общий launcher останавливает только записанные PID трёх известных генераторов на 9022/9025; работающие эмбеддер и реранкер сохраняются. Общие sampling defaults заданы серверу явно: greedy, seed 42, repetition_penalty 1.03. Предел CUDA graph capture совпадает с max-num-seqs (16/4).
+
+Qwen3.5 запускается в текстовом режиме (`--language-model-only`) с `--reasoning-parser qwen3` и `--default-chat-template-kwargs '{"enable_thinking":false}'`, чтобы JSON-извлечение и короткие ответы работали без thinking. Для его длинного endpoint в конфиге укажите `rope_profile: "native-65536-no-scaling"`. Источники: [конфигурация Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B/blob/main/config.json), [рекомендации vLLM](https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#configuration-tips).
+
 Лончер различает работающий процесс, zombie и устаревший PID. Для новых запусков рядом с PID-файлом сохраняется `.identity.json` с временем рождения процесса: переиспользованный PID не считается прежним сервисом. Старые записи очищаются автоматически; неизвестный живой процесс не завершается. Перед запуском проверяется, что нужные порты свободны.
 
 Логи дописываются при повторных попытках:
 
 - `vllm_meno2_launcher.log` — этап, время UTC, GPU 1, команда и причина ошибки запуска Meno;
 - `vllm_meno2.log`, `vllm_meno2_yarn.log` — вывод соответствующего процесса vLLM;
+- `vllm_meno1_launcher.log`, `vllm_meno1.log`, `vllm_meno1_long.log` — Meno-Lite-0.1;
+- `vllm_qwen35_launcher.log`, `vllm_qwen35.log`, `vllm_qwen35_long.log` — Qwen3.5-9B;
 - `vllm_reranker_launcher.log`, `vllm_reranker.log` — запуск и вывод реранкера.
 - `vllm_embedder_launcher.log`, `vllm_embedder.log` — запуск и вывод эмбеддера.
 
@@ -119,7 +127,7 @@ bash launch_split_context.sh /path/to/checkpoint meno-lite-0.2
 
 Пилот зафиксирован в `data/pilot50.json`: 50 вопросов, seed 42, пользователи `user_44`, `user_61`, `user_65`, 155 сессий, по 12–13 вопросов в четырёх категориях temporal × session-scope. Это отладочный пилот, не репрезентативная оценка test. Данные закреплены на `d0480d86d4ef20701d8538dd3d50528ee065ab63`, официальные функции RUMBA — на `a20471ab5bb9d6d0b3bc8a263495a799868e1a3b`.
 
-Для остальных колонок задайте endpoint и повторите команду с `--model meno-lite-0.1` или `--model qwen2.5-7b-instruct`. Модели можно разворачивать последовательно на одном GPU. Память одной модели не используется для другой. Эталоны, evidence и категории не передаются в извлечение или запрос модели; evidence используется только для диагностики.
+Для остальных колонок задайте endpoint и повторите команду с `--model meno-lite-0.1` или `--model qwen3.5-9b` (served name `Qwen3.5-9B`). Модели можно разворачивать последовательно на одном GPU. Память одной модели не используется для другой. Эталоны, evidence и категории не передаются в извлечение или запрос модели; evidence используется только для диагностики.
 
 ## Протокол RAGU
 

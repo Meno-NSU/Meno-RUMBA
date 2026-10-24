@@ -15,6 +15,16 @@ process = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(process)
 
 
+def test_switch_targets_only_recorded_benchmark_generators(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(process, "stop", lambda path, port, model: calls.append((path.name, port, model)))
+    process.stop_benchmark(tmp_path)
+    assert len(calls) == 6
+    assert {name for _, _, name in calls} == {"meno-lite-0.1", "meno-lite-0.2", "Qwen3.5-9B"}
+    assert {port for _, port, _ in calls} == {9022, 9025}
+    assert not any("reranker" in path or "embedder" in path for path, _, _ in calls)
+
+
 @pytest.mark.parametrize("contents", ["0\n", "1\n", "not-a-pid\n", ""])
 def test_invalid_pid_never_receives_a_signal(tmp_path, monkeypatch, contents):
     file = tmp_path / "server.pid"

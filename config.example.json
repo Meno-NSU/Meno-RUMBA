@@ -7,7 +7,7 @@
       "weights": "bond005/meno-lite-0.2; pin the exact weights revision before a scored run"
     },
     "meno-lite-0.1": null,
-    "qwen2.5-7b-instruct": null
+    "qwen3.5-9b": null
   },
   "embedding": {
     "backend": "openai",

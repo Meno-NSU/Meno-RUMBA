@@ -18,7 +18,8 @@ def executable(path, contents):
 
 @pytest.mark.parametrize("script", [
     "launch_split_context.sh", "restart_meno2_split_context.sh",
-    "launch_meno2.sh", "launch_reranker_8192.sh", "launch_embedder_8192.sh",
+    "launch_meno2.sh", "launch_meno1.sh", "launch_qwen35_9b.sh",
+    "launch_reranker_8192.sh", "launch_embedder_8192.sh",
 ])
 @pytest.mark.parametrize("fail_start", [False, True])
 def test_all_server_launchers_force_gpu_one_and_log_failures(tmp_path, script, fail_start):
@@ -31,13 +32,28 @@ def test_all_server_launchers_force_gpu_one_and_log_failures(tmp_path, script, f
     activate.write_text(":\n")
     trace = tmp_path / "launches.jsonl"
     config_cuda = tmp_path / "config-cuda.txt"
-    executable(fakebin / "python", """#!/bin/sh
-case "$1" in
-  */server_process.py) exec "$FAKE_REAL_PYTHON" "$@" ;;
-esac
-printf '%s' "$CUDA_VISIBLE_DEVICES" > "$FAKE_CONFIG_CUDA"
-printf '%s\\n' '{"rope_parameters":{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768,"rope_theta":1000000}}'
-""")
+    executable(fakebin / "python", '#!/bin/sh\nexec "$FAKE_REAL_PYTHON" "$@"\n')
+    (fakebin / "transformers.py").write_text('''
+import json, os
+from pathlib import Path
+from types import SimpleNamespace
+class AutoConfig:
+    @staticmethod
+    def from_pretrained(path, local_files_only=False):
+        assert local_files_only
+        Path(os.environ["FAKE_CONFIG_CUDA"]).write_text(os.environ["CUDA_VISIBLE_DEVICES"])
+        data=json.loads((Path(path)/"config.json").read_text())
+        return SimpleNamespace(**data.get("text_config",data))
+''')
+    for name in ("meno-lite-0.1", "meno-lite-0.2", "Qwen3.5-9B"):
+        checkpoint = tmp_path / "models" / name
+        checkpoint.mkdir(parents=True)
+        config = {"model_type": "qwen2", "max_position_embeddings": 32768, "rope_theta": 1000000}
+        if name == "Qwen3.5-9B":
+            config = {"text_config": {"model_type": "qwen3_5_text", "max_position_embeddings": 262144,
+                                      "rope_parameters": {"rope_type": "default", "rope_theta": 10000000,
+                                                          "partial_rotary_factor": 0.25, "mrope_section": [11, 11, 10]}}}
+        (checkpoint / "config.json").write_text(json.dumps(config))
     executable(fakebin / "sleep", "#!/bin/sh\nexit 0\n")
     executable(fakebin / "vllm", f"#!{sys.executable}\n" + """
 import json, os, sys, time
@@ -67,6 +83,7 @@ sys.exit(1)
 """)
     pidfiles = [tmp_path / name for name in ("native.pid", "yarn.pid", "reranker.pid", "embedder.pid")]
     env = {**os.environ, "PATH": str(fakebin) + os.pathsep + os.environ["PATH"],
+           "PYTHONPATH": str(fakebin),
            "VLLM_BIN": str(fakebin / "vllm"), "CUDA_VISIBLE_DEVICES": "0", "GPU_ID": "0",
            "FAKE_LAUNCH_TRACE": str(trace), "FAKE_CONFIG_CUDA": str(config_cuda),
            "FAKE_REAL_PYTHON": sys.executable,
@@ -104,7 +121,19 @@ sys.exit(1)
             assert ports == ["9022", "9025"]
             assert config_cuda.read_text() == "1"
             assert "--hf-overrides" not in rows[0]["args"]
-            assert "--hf-overrides" in rows[1]["args"]
+            qwen35 = script == "launch_qwen35_9b.sh"
+            assert ("--hf-overrides" in rows[1]["args"]) is not qwen35
+            model = "Qwen3.5-9B" if qwen35 else "meno-lite-0.1" if script == "launch_meno1.sh" else "meno-lite-0.2"
+            for row, context in zip(rows, (32768, 65536)):
+                server_args = row["args"]
+                assert server_args[server_args.index("--served-model-name") + 1] == model
+                assert server_args[server_args.index("--max-model-len") + 1] == str(context)
+                assert server_args[server_args.index("--seed") + 1] == "42"
+                defaults = json.loads(server_args[server_args.index("--override-generation-config") + 1])
+                assert defaults["temperature"] == 0 and defaults["repetition_penalty"] == 1.03
+                assert ("--language-model-only" in server_args) is qwen35
+                if qwen35:
+                    assert json.loads(server_args[server_args.index("--default-chat-template-kwargs") + 1]) == {"enable_thinking": False}
         logs = list(launch.glob("*launcher.log"))
         assert logs and all("START:" in path.read_text() and "COMMAND:" in path.read_text() for path in logs)
     finally:

@@ -129,16 +129,30 @@ def require_free_port(port):
     report(f"Port {port} is free")
 
 
+def stop_benchmark(launch_dir, native_port=9022, long_port=9025):
+    """Switch only the three known generators; pooling services stay running."""
+    for tag, model in (("meno2", "meno-lite-0.2"), ("meno1", "meno-lite-0.1"),
+                       ("qwen35", "Qwen3.5-9B")):
+        stop(Path(launch_dir) / f"vllm_process_{tag}.txt", native_port, model)
+        stop(Path(launch_dir) / f"vllm_process_{tag}_yarn.txt", long_port, model)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("stop", "record", "alive", "free"))
+    parser.add_argument("action", choices=("stop", "record", "alive", "free", "stop-benchmark"))
     parser.add_argument("--pid-file", type=Path)
     parser.add_argument("--pid", type=int)
     parser.add_argument("--port", type=int)
     parser.add_argument("--model")
+    parser.add_argument("--launch-dir", type=Path)
+    parser.add_argument("--long-port", type=int, default=9025)
     args = parser.parse_args()
     try:
-        if args.action == "stop":
+        if args.action == "stop-benchmark":
+            if args.launch_dir is None:
+                raise ValueError("stop-benchmark requires --launch-dir")
+            stop_benchmark(args.launch_dir, args.port or 9022, args.long_port)
+        elif args.action == "stop":
             stop(args.pid_file, args.port, args.model)
         elif args.action == "record":
             record(args.pid_file, args.pid, args.port, args.model)

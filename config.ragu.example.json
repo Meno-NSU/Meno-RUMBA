@@ -6,7 +6,7 @@
       "weights": "bond005/meno-lite-0.2 (operator-provided server; revision unverified)"
     },
     "meno-lite-0.1": null,
-    "qwen2.5-7b-instruct": null
+    "qwen3.5-9b": null
   },
   "embedding": {
     "backend": "openai",
@@ -97,6 +97,6 @@
       "max_model_len": 65536
     },
     "meno-lite-0.1": null,
-    "qwen2.5-7b-instruct": null
+    "qwen3.5-9b": null
   }
 }
