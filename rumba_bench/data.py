@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import random
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,8 +25,9 @@ def read_json(path):
 def write_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n")
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, prefix=path.name + ".", suffix=".tmp", delete=False) as handle:
+        handle.write(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n")
+        temporary = Path(handle.name)
     temporary.replace(path)
 
 

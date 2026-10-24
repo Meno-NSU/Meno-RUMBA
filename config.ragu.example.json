@@ -1,0 +1,79 @@
+{
+  "models": {
+    "meno-lite-0.2": {
+      "base_url": "http://localhost:8000/v1",
+      "model": "meno-lite-0.2",
+      "weights": "bond005/meno-lite-0.2 (operator-provided server; revision unverified)"
+    },
+    "meno-lite-0.1": null,
+    "qwen2.5-7b-instruct": null
+  },
+  "embedding": {
+    "backend": "openai",
+    "base_url": "http://localhost:8001/v1",
+    "model": "bge-m3",
+    "source_model": "BAAI/bge-m3",
+    "revision": null,
+    "batch_size": 16,
+    "query_prefix": "",
+    "passage_prefix": "",
+    "dimensions": 1024
+  },
+  "runtime": {
+    "concurrency": 4,
+    "timeout_s": 300,
+    "max_retries": 2
+  },
+  "reranker": {
+    "base_url": "http://localhost:8002/v1",
+    "model": "bge-reranker-v2-m3",
+    "source_model": "BAAI/bge-reranker-v2-m3",
+    "revision": null
+  },
+  "judge": null,
+  "protocol": {
+    "seed": 42,
+    "temperature": 0,
+    "top_p": 1.0,
+    "repetition_penalty": 1.03,
+    "extraction_max_tokens": 4096,
+    "answer_max_tokens": 256,
+    "answer_stop": [
+      "\n"
+    ],
+    "chunk_chars": 3500,
+    "chunk_overlap_chars": 200,
+    "entity_validation": true,
+    "relation_validation": true,
+    "icl": {
+      "enabled": true,
+      "num_examples": 1,
+      "selection_strategy": "hybrid"
+    },
+    "builder": {
+      "use_llm_summarization": true,
+      "use_clustering": false,
+      "build_only_vector_context": false,
+      "make_community_summary": false,
+      "remove_isolated_nodes": false,
+      "summarize_only_if_more_than": 7,
+      "random_seed": 42
+    },
+    "search": {
+      "top_k": 20,
+      "rerank_top_k": 5,
+      "use_summary": false,
+      "use_chunks": true
+    },
+    "context_max_tokens": 12000,
+    "history_policy": "all-provided-sessions-as-official-rag",
+    "judge_max_tokens": 4096,
+    "extraction_decoding": "bounded",
+    "structured_limits": {
+      "entities": 16,
+      "relations": 16,
+      "name_chars": 80,
+      "description_chars": 200
+    }
+  }
+}

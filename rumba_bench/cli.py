@@ -11,6 +11,7 @@ from .pipeline import (Encoder, Generation, chunks, extract_user, generate_answe
 from .report import comparison, make_report
 from .upstream import load_official
 from .schemas import extraction_schema
+from .episodic import windows
 
 
 def selected_questions(suite):
@@ -46,11 +47,13 @@ def extraction_paths(config, label):
     full = protocol_manifest(config)
     keys = ("seed", "temperature", "extraction_stage", "prompt_variant", "with_signatures",
             "chunk_chars", "chunk_overlap_chars", "extraction_max_tokens", "extraction_decoding", "structured_limits",
-            "top_p", "repetition_penalty")
-    manifest = {"protocol": {k: config["protocol"][k] for k in keys}, "model": config["models"][label],
+            "top_p", "repetition_penalty", "memory_pipeline", "memory_window_chars", "memory_fact_max_tokens",
+            "memory_max_facts", "memory_statement_chars", "memory_quote_chars", "memory_citation_repair", "memory_repair_max_tokens")
+    manifest = {"protocol": {k: config["protocol"].get(k) for k in keys}, "model": config["models"][label],
                 "sources": full["training_source_hashes"],
                 "pipeline_source": full["runner_hashes"]["pipeline.py"],
                 "schema_source": full["runner_hashes"]["schemas.py"],
+                "episodic_source": full["runner_hashes"].get("episodic.py"),
                 "dataset_histories_sha256": full["dataset"]["histories_sha256"]}
     mode = config["protocol"].get("extraction_decoding", "free")
     folder = ROOT / "runs/extraction" / f"{mode}-{digest(manifest)[:16]}" / label
@@ -77,16 +80,24 @@ def estimate(config, suite):
     users = sorted({row["user_id"] for row in rows})
     sessions = 0
     jobs = 0
+    episodic = config["protocol"].get("memory_pipeline", "nerel_v1") == "episodic_v1"
     for user in users:
         history = read_json(ROOT / "data/conversations" / f"{user}.json")
         sessions += len(history)
         for session in history:
+            if episodic:
+                jobs += len(windows(session, chunks, config["protocol"].get("memory_window_chars", 8000)))
+                continue
             text = "\n".join(f"{m['role']}: {m['message']}" for m in session["conversation"])
             jobs += sum(1 for _ in chunks(text, config["protocol"]["chunk_chars"], config["protocol"]["chunk_overlap_chars"]))
     result = {"suite": suite, "questions": len(rows), "users": len(users), "sessions": sessions,
               "extraction_calls_per_model": jobs, "answer_calls_per_model": len(rows),
               "judge_calls_per_model": len(rows), "concurrency": config["runtime"]["concurrency"],
               "extraction_output_token_upper_bound_per_model": jobs * config["protocol"]["extraction_max_tokens"]}
+    if episodic:
+        result.update({"personal_fact_calls_per_model": jobs, "nerel_calls_upper_bound_per_model": jobs,
+                       "extraction_calls_per_model": 2 * jobs,
+                       "extraction_output_token_upper_bound_per_model": jobs * (config["protocol"].get("memory_fact_max_tokens", 4096) + config["protocol"]["extraction_max_tokens"])})
     write_json(ROOT / "runs" / f"estimate-{suite}.json", result)
     print(canonical(result))
 
@@ -96,6 +107,13 @@ def smoke(config, label):
     ontology, build_prompt, _, _ = training_modules(config)
     row = selected_questions("pilot")[0]
     session = read_json(ROOT / "data/conversations" / f"{row['user_id']}.json")[0]
+    if config["protocol"].get("memory_pipeline", "nerel_v1") == "episodic_v1":
+        from .pipeline import extract_memory_window
+        folder = ROOT / "runs/smoke/episodic" / digest(protocol_manifest(config))[:16] / label
+        generator = Generation(config["models"][label], config["runtime"], folder / "requests", sampling=config["protocol"])
+        result = extract_memory_window(row["user_id"], session, 0, windows(session, chunks, config["protocol"].get("memory_window_chars", 8000))[0], config, generator, folder)
+        print(canonical(result))
+        return
     text = "\n".join(f"{m['role']}: {m['message']}" for m in session["conversation"])
     part = next(chunks(text, config["protocol"]["chunk_chars"], config["protocol"]["chunk_overlap_chars"]))
     source = f"User ID: {row['user_id']}\nSession: {session['session_idx']}\nTimestamp: {session['session_datetime']}\n{part}"
@@ -127,7 +145,7 @@ def extract(config, label, suite):
     full_gate(config, label, suite)
     questions = selected_questions(suite)
     folder = extraction_paths(config, label)
-    generator = Generation(config["models"][label], config["runtime"], folder / "requests", sampling=config["protocol"])
+    generator = Generation(config["models"][label], config["runtime"], ROOT / "runs/extraction-requests" / label, sampling=config["protocol"])
     available = generator.client.models.list()
     if config["models"][label]["model"] not in {m.id for m in available.data}:
         raise ValueError("Expected served model not present")
@@ -140,6 +158,13 @@ def extract(config, label, suite):
           "extraction_errors": sum("error" in r for r in all_records),
           "ontology_violations": sum(len(r["violations"]) for r in all_records),
           "empty_extractions": sum(not r["entities"] and not r["relations"] for r in all_records)}
+    if config["protocol"].get("memory_pipeline", "nerel_v1") == "episodic_v1":
+        qc.update({"personal_facts": sum(len(r.get("facts", [])) for r in all_records),
+                   "rejected_facts": sum(len(r.get("rejected_facts", [])) for r in all_records),
+                   "repaired_facts": sum(len(r.get("repaired_facts", [])) for r in all_records),
+                   "repair_errors": sum("repair_error" in r for r in all_records),
+                   "nerel_errors": sum("nerel_error" in r for r in all_records),
+                   "empty_extractions": sum(not r.get("facts") for r in all_records)})
     write_json(folder / f"qc-{suite}.json", qc)
     print(canonical(qc))
 
@@ -202,7 +227,7 @@ def run(config, label, suite):
     answer(config, label, suite)
 
 
-def score(config, label, suite):
+def score(config, label, suite, folder_override=None):
     if not config.get("judge"):
         raise ValueError("Configure independent judge endpoint first; no self-judging")
     judge = config["judge"]
@@ -210,7 +235,7 @@ def score(config, label, suite):
         raise ValueError("Judge must be independent of the evaluated model")
     if judge.get("source_model", judge["model"]) != "ai-forever/pollux-judge-32b":
         raise ValueError("Official RU rumba_metric requires Pollux; configure judge.source_model")
-    root, folder = job_paths(config, label)
+    root, folder = (folder_override.parent, folder_override) if folder_override is not None else job_paths(config, label)
     generator = Generation(judge, config["runtime"], folder / "judge-requests")
     identity_path = folder / "scores" / "judge.json"
     if identity_path.exists() and read_json(identity_path) != judge:
@@ -262,6 +287,8 @@ def main():
         config["protocol"]["extraction_decoding"] = args.extraction_decoding
     if config["protocol"]["extraction_stage"] != "one_stage" or config["protocol"]["temperature"] != 0:
         raise ValueError("This frozen protocol implements greedy one-stage extraction only")
+    if config["protocol"].get("memory_pipeline", "nerel_v1") not in ("nerel_v1", "episodic_v1"):
+        raise ValueError("Unknown memory_pipeline")
     if args.command == "prepare":
         prepare()
     elif args.command == "preflight":

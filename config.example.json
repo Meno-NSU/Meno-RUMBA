@@ -24,7 +24,7 @@
     "seed": 42,
     "temperature": 0,
     "extraction_stage": "one_stage",
-    "extraction_decoding": "free",
+    "extraction_decoding": "structured",
     "structured_limits": {
       "entities": 16,
       "relations": 16,
@@ -45,9 +45,17 @@
     "context_max_chars": 24000,
     "candidate_pool": 100,
     "history_policy": "all-provided-sessions-as-official-rag",
-    "memory": "extracted-entities-and-relations-only",
+    "memory": "grounded-episodic-facts-with-nerel",
     "top_p": 1.0,
-    "repetition_penalty": 1.0
+    "repetition_penalty": 1.03,
+    "memory_pipeline": "episodic_v1",
+    "memory_window_chars": 8000,
+    "memory_fact_max_tokens": 4096,
+    "memory_max_facts": 24,
+    "memory_statement_chars": 600,
+    "memory_quote_chars": 400,
+    "memory_citation_repair": true,
+    "memory_repair_max_tokens": 3072
   },
   "runtime": {
     "concurrency": 2,

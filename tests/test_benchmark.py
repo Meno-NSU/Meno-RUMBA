@@ -185,6 +185,7 @@ def test_both_modes_keep_separate_extraction_caches(tmp_path, config, monkeypatc
         "training_source_hashes": {"prompts.py": "same-prompts"},
         "runner_hashes": {"pipeline.py": "same-pipeline", "schemas.py": "same-schema"},
         "dataset": {"histories_sha256": "same-data"}})
+    config["protocol"]["extraction_decoding"] = "free"
     free = cli.extraction_paths(config, "meno-lite-0.2")
     constrained = deepcopy(config)
     constrained["protocol"]["extraction_decoding"] = "structured"
