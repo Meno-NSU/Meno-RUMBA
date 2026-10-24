@@ -43,14 +43,25 @@ cp config.ragu.example.json config.ragu.json
 - [restart_meno2_split_context.sh](scripts/restart_meno2_split_context.sh) — окружение, checkpoint и PID-файлы Meno-Lite-0.2.
 - [launch_split_context.sh](scripts/launch_split_context.sh) — обычный и YaRN экземпляры одних весов.
 - [launch_reranker_8192.sh](scripts/launch_reranker_8192.sh) — перезапуск реранкера с контекстом 8192.
+- [server_process.py](scripts/server_process.py) — состояние процесса, очистка устаревших PID и проверка портов.
+- [server_logging.sh](scripts/server_logging.sh) — логирование этапов и ошибок запуска.
 
 В серверном каталоге, где уже находится `vllm_0_29_0/`, выполните:
 
 ```sh
 (
 set -e
-for script in launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_reranker_8192.sh; do
-  curl -fsSL "https://raw.githubusercontent.com/Meno-NSU/Meno-RUMBA/main/scripts/$script" -o "$script"
+LAUNCHER_REF=main
+LAUNCHER_API=https://api.github.com/repos/Meno-NSU/Meno-RUMBA/contents/scripts
+for script in server_process.py server_logging.sh launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_reranker_8192.sh; do
+  curl -4 --http1.1 -fLsS --retry 4 --retry-all-errors \
+    -H 'Accept: application/vnd.github.raw+json' \
+    "$LAUNCHER_API/$script?ref=$LAUNCHER_REF" -o "$script.new"
+  case "$script" in
+    *.sh) bash -n "$script.new" ;;
+    *.py) python -m py_compile "$script.new" ;;
+  esac
+  command mv -f "$script.new" "$script"
 done
 CUDA_VISIBLE_DEVICES=1 bash launch_reranker_8192.sh
 CUDA_VISIBLE_DEVICES=1 bash launch_meno2.sh
@@ -58,6 +69,20 @@ CUDA_VISIBLE_DEVICES=1 bash launch_meno2.sh
 ```
 
 По умолчанию веса находятся в `../models/meno-lite-0.2` и `../models/bge-reranker-v2-m3` относительно серверного каталога запуска. Другие пути задаются через `MENO2_MODEL_PATH`, `RERANKER_MODEL_PATH`, `VLLM_ENV_DIR`, `VLLM_LAUNCH_DIR`. Обёртки находят остальные скрипты рядом с собой. Для реранкера используется `vllm_process_reranker.txt`; если прежний PID записан в другом файле, задайте `RERANKER_PID_FILE`. Неучтённый слушатель на 9024 скрипт не завершает, а выдаёт явную инструкцию.
+
+Лончер различает работающий процесс, zombie и устаревший PID. Для новых запусков рядом с PID-файлом сохраняется `.identity.json` с временем рождения процесса: переиспользованный PID не считается прежним сервисом. Старые записи очищаются автоматически; неизвестный живой процесс не завершается. Перед запуском проверяется, что нужные порты свободны.
+
+Логи дописываются при повторных попытках:
+
+- `vllm_meno2_launcher.log` — этап, время UTC, GPU 1, команда и причина ошибки запуска Meno;
+- `vllm_meno2.log`, `vllm_meno2_yarn.log` — вывод соответствующего процесса vLLM;
+- `vllm_reranker_launcher.log`, `vllm_reranker.log` — запуск и вывод реранкера.
+
+При ошибке последние 60 строк модельных логов включаются в лог лончера. Если vLLM завершился во время запуска, сохраняется его код завершения. Вывод также идёт в терминал. Для диагностики Meno:
+
+```sh
+tail -n 200 vllm_meno2_launcher.log
+```
 
 Для Qwen2/Qwen2.5 с исходным контекстом 32 768 общий launcher проверяет исходный конфиг, сохраняет checkpoint `rope_theta` и запускает обычный сервер на 9022 и YaRN на 9025 последовательно. В vLLM 0.29 используется `--hf-overrides` с `rope_parameters`; старый `--rope-scaling` больше не поддерживается. Исходный config.json не изменяется. Пример вызова с собственными путями:
 

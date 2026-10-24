@@ -5,6 +5,9 @@ export CUDA_VISIBLE_DEVICES=1
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 LAUNCH_DIR=${VLLM_LAUNCH_DIR:-$PWD}
+source "$SCRIPT_DIR/server_logging.sh"
+launcher_logging_init "${LAUNCH_LOG:-$LAUNCH_DIR/vllm_meno2_launcher.log}"
+launcher_stage "activate vLLM environment"
 VLLM_ENV_DIR=${VLLM_ENV_DIR:-$LAUNCH_DIR/vllm_0_29_0}
 MODEL_PATH=${MENO2_MODEL_PATH:-$LAUNCH_DIR/../models/meno-lite-0.2}
 cd "$LAUNCH_DIR"
