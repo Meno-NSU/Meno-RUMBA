@@ -4,7 +4,7 @@
 
 Истории → `TwoStageArtifactsExtractorLLM` с NEREL → граф и гибридный индекс BM25 + BGE-M3 → `LocalSearchEngine` с BGE reranker → ответ оцениваемой модели. Все нейросетевые модели работают на удалённых серверах. Для каждой оцениваемой модели извлечение выполняется независимо; каждый пользователь имеет отдельный граф.
 
-Пилоты Meno-Lite-0.2 и Qwen3.5-9B завершены на одинаковых 50 вопросах: greedy, seed 42, repetition_penalty 1.03; F1 — 0.1902 и 0.3018 соответственно. Ошибок извлечения и обрезанных ответов — 0. Официальный rumba_metric ожидает судью после пилота Meno-Lite-0.1. [Общая таблица и оценка времени полного прогона](reports/ragu-pilot-comparison.md), [Meno-Lite-0.2](reports/ragu-pilot-meno-lite-0.2.md), [Qwen3.5-9B](reports/ragu-pilot-qwen3.5-9b.md).
+Все три исходных пилота завершены на одинаковых 50 вопросах: greedy, seed 42, repetition_penalty 1.03. F1: Meno-Lite-0.1 — 0.1285, Meno-Lite-0.2 — 0.1902, Qwen3.5-9B — 0.3018. Всего сохранены 150 ответов; технических ошибок и обрезаний — 0. Официальный rumba_metric ожидает отдельный судейский этап. [Общая таблица и оценка времени](reports/ragu-pilot-comparison.md), [Meno-Lite-0.1](reports/ragu-pilot-meno-lite-0.1.md), [Meno-Lite-0.2](reports/ragu-pilot-meno-lite-0.2.md), [Qwen3.5-9B](reports/ragu-pilot-qwen3.5-9b.md).
 
 ## Установка и запуск
 
