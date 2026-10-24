@@ -29,6 +29,9 @@ class ContextRoutingLLM(LLM):
             raise ValueError("Both backends must use identical generation limits")
         self.max_tokens = native.max_tokens
         self.cache = Path(cache)
+        self.tokenizer_max_retries = config["runtime"].get("max_retries", 2)
+        if type(self.tokenizer_max_retries) is not int or self.tokenizer_max_retries < 0:
+            raise ValueError("runtime.max_retries must be a nonnegative integer")
         key = os.getenv(native_endpoint.get("api_key_env", "VLLM_API_KEY"), "EMPTY")
         self.tokenizer_client = httpx.Client(trust_env=False, timeout=config["runtime"]["timeout_s"],
                                            headers={"Authorization": f"Bearer {key}"})
@@ -43,8 +46,17 @@ class ContextRoutingLLM(LLM):
             count = read_json(path)["count"]
         else:
             base = self.native_endpoint["base_url"].rstrip("/").removesuffix("/v1")
-            response = self.tokenizer_client.post(base + "/tokenize", json=request)
-            response.raise_for_status()
+            # Tokenization is safe to repeat. A transient keep-alive disconnect
+            # must not turn a chunk into a missing extraction result upstream.
+            for attempt in range(self.tokenizer_max_retries + 1):
+                try:
+                    response = self.tokenizer_client.post(base + "/tokenize", json=request)
+                    response.raise_for_status()
+                    break
+                except httpx.TransportError:
+                    if attempt == self.tokenizer_max_retries:
+                        raise
+                    time.sleep(min(2 ** attempt, 4))
             count = response.json()["count"]
             write_json(path, {"count": count, "request_hash": digest(request)})
         if type(count) is not int or count < 0:

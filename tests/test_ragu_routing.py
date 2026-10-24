@@ -80,6 +80,60 @@ def test_exact_tokenizer_response_is_cached(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_tokenizer_retries_disconnects_without_changing_route(tmp_path, monkeypatch):
+    import httpx
+    from rumba_bench import ragu_routing
+
+    routed, native, extended = router(tmp_path)
+    del routed.token_count
+    routed.tokenizer_client.close()
+    requests, waits = [], []
+
+    def reply(request):
+        requests.append(request)
+        if len(requests) <= 2:
+            raise httpx.RemoteProtocolError("Server disconnected", request=request)
+        return httpx.Response(200, json={"count": 34640})
+
+    monkeypatch.setattr(ragu_routing.time, "sleep", waits.append)
+    routed.tokenizer_client = httpx.Client(transport=httpx.MockTransport(reply))
+    messages = [{"role": "user", "content": "34640"}]
+    try:
+        assert await routed.chat_completion(messages) == "yarn:34640"
+        assert not native.calls and len(extended.calls) == 1
+        assert len(requests) == 3 and waits == [1, 2]
+        assert routed.token_count(messages) == 34640 and len(requests) == 3
+        assert not routed.errors
+    finally:
+        routed.close()
+
+
+@pytest.mark.asyncio
+async def test_exhausted_tokenizer_retries_never_guess_a_route(tmp_path, monkeypatch):
+    import httpx
+    from rumba_bench import ragu_routing
+
+    routed, native, extended = router(tmp_path)
+    del routed.token_count
+    routed.tokenizer_client.close()
+    requests = []
+
+    def reply(request):
+        requests.append(request)
+        raise httpx.ReadTimeout("Tokenizer unavailable", request=request)
+
+    monkeypatch.setattr(ragu_routing.time, "sleep", lambda _: None)
+    routed.tokenizer_client = httpx.Client(transport=httpx.MockTransport(reply))
+    try:
+        with pytest.raises(httpx.ReadTimeout):
+            await routed.chat_completion([{"role": "user", "content": "34640"}])
+        assert len(requests) == 3 and not list(tmp_path.glob("*.json"))
+        assert not native.calls and not extended.calls and len(routed.errors) == 1
+    finally:
+        routed.close()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("native_limit,extended_limit,reranker_limit,message", [
     (32768, 65536, 512, "reranker: context 512 < required 8192"),
     (65536, 65536, 8192, "policy: context 65536 must equal native context 32768"),
