@@ -1,0 +1,505 @@
+{
+  "metadata": {
+    "run_id": "ragu-722050e52edfe4aa",
+    "code_revision": "688360edc692c1ddd36d9d9c15327622c6c120c0",
+    "completed_at_local": "2026-10-25T02:51:09.379326+07:00",
+    "harness": "ragu-two-stage-local-rerank-v1",
+    "ragu_revision": "abd3f2958c186dc624bbd42560ad6e1e7033efaf",
+    "ragu_source_hash": "e10fa69d8aefc6df26fded0b2c70f8c9b64610ba2918f52b2a48f39a18830418",
+    "runner_hashes": {
+      "ragu_harness.py": "9b13048956a319ecb1f78375fd14ef92983114f7c1499ae43df0353fba0fea2b",
+      "ragu_decoding.py": "02420b22078923fecc0bc46dea7e4036258ddf6706e6fe0a01ee1c865279f315",
+      "ragu_routing.py": "e20c68cc3a6a9f09858daaad9f905d38c0484becd7c9e65ec6f06e5d221aca54",
+      "pipeline.py": "fa9e402fc6107463749b6ba9cd88021bf1fe2704468ab2f8011a5717a44b9390",
+      "data.py": "38c2206ec94b2b23d8eaa5fae889ac8eb5c136ef0fc28fe5530ebdb523a2a13f",
+      "upstream.py": "09c7a634af6e3b44960786d566408a82a0aced0a9d654c8b3078233bcf9e0ded",
+      "report.py": "6cff44b0f8c4c11c7b9b005ca44ff20361487d7d53df4cd9b8f26c8082f202e5"
+    },
+    "dataset": {
+      "dataset": "ai-forever/RUMBA",
+      "config": "ru",
+      "split": "test",
+      "revision": "d0480d86d4ef20701d8538dd3d50528ee065ab63",
+      "questions_sha256": "f8a1d02ae5b73cab0f2dfac9f3f805b7822bb7485c4ec0ff8c9a9c26b9bd3bec",
+      "histories_sha256": "73cc1371b0d44498fcb9e4f76ae11195dbd77e451a8b0523f26dc68445af3504",
+      "questions": 1543,
+      "users": 85,
+      "sessions": 4031,
+      "cells": {
+        "atemporal × single": 678,
+        "atemporal × multi": 450,
+        "temporal × multi": 154,
+        "temporal × single": 261
+      },
+      "pilot": {
+        "seed": 42,
+        "ids": [
+          "65|q12",
+          "44|q3",
+          "65|q8",
+          "61|q9",
+          "61|q7",
+          "44|q7",
+          "61|q13",
+          "44|q16",
+          "65|q3",
+          "65|q19",
+          "44|q10",
+          "65|q21",
+          "61|q12",
+          "65|q1",
+          "44|q8",
+          "44|q2",
+          "65|q0",
+          "65|q9",
+          "65|q20",
+          "65|q6",
+          "61|q18",
+          "61|q0",
+          "65|q7",
+          "44|q6",
+          "65|q11",
+          "65|q14",
+          "61|q16",
+          "61|q17",
+          "61|q14",
+          "61|q4",
+          "44|q13",
+          "61|q11",
+          "44|q17",
+          "61|q6",
+          "65|q15",
+          "44|q4",
+          "65|q2",
+          "65|q17",
+          "44|q12",
+          "65|q4",
+          "65|q5",
+          "65|q10",
+          "61|q10",
+          "65|q18",
+          "61|q1",
+          "44|q15",
+          "44|q14",
+          "61|q19",
+          "44|q1",
+          "61|q8"
+        ],
+        "users": [
+          "user_44",
+          "user_61",
+          "user_65"
+        ],
+        "cells": {
+          "atemporal × multi": 13,
+          "temporal × single": 12,
+          "temporal × multi": 12,
+          "atemporal × single": 13
+        },
+        "selection": "few-user pool; balanced temporal × scope; not a representative global estimate"
+      }
+    },
+    "official": {
+      "repository": "https://github.com/ai-forever/RUMBA",
+      "commit": "a20471ab5bb9d6d0b3bc8a263495a799868e1a3b",
+      "files": {
+        "rumba_ru.py": {
+          "path": "evaluation/lighteval_ext/custom_tasks/rumba_ru.py",
+          "sha256": "96f3efc1cb99d55d435b6c7f42a8a9d3d120ec4043e7111e33b038c5aca13adc"
+        },
+        "prompts.py": {
+          "path": "evaluation/prompts.py",
+          "sha256": "a23e399ec0cf281db4e0564cf676cdb57a07a7c53b58ed99a058916bdc0d2c80"
+        },
+        "LICENSE.txt": {
+          "path": "LICENSE.txt",
+          "sha256": "46666a3abcb085158f4cd06f27dcd10226b0e1a39609e663558f69ef8e71cc10"
+        }
+      },
+      "dataset_revision": "d0480d86d4ef20701d8538dd3d50528ee065ab63"
+    },
+    "model_weights_revision": null,
+    "model_weights_note": "Operator-provided Qwen3.5-9B checkpoint; exact weights revision unverified.",
+    "latency_note": "Caches were enabled, including reusable embedding results; timings support planning and are not a cold performance comparison.",
+    "serving_profile": {
+      "model": "Qwen3.5-9B",
+      "thinking": false,
+      "text_only": true,
+      "native_32768_rope": "default",
+      "native_65536_rope": "default",
+      "yarn_enabled": false
+    },
+    "route_label_note": "The saved harness build report calls the long route yarn for historical reasons; this public report maps it to native_65536 for Qwen3.5."
+  },
+  "protocol": {
+    "seed": 42,
+    "temperature": 0,
+    "top_p": 1.0,
+    "repetition_penalty": 1.03,
+    "extraction_max_tokens": 4096,
+    "answer_max_tokens": 256,
+    "answer_stop": [
+      "\n"
+    ],
+    "chunk_chars": 3500,
+    "chunk_overlap_chars": 200,
+    "entity_validation": true,
+    "relation_validation": true,
+    "icl": {
+      "enabled": true,
+      "num_examples": 1,
+      "selection_strategy": "hybrid"
+    },
+    "builder": {
+      "use_llm_summarization": true,
+      "use_clustering": false,
+      "build_only_vector_context": false,
+      "make_community_summary": false,
+      "remove_isolated_nodes": false,
+      "summarize_only_if_more_than": 7,
+      "random_seed": 42
+    },
+    "search": {
+      "top_k": 20,
+      "rerank_top_k": 5,
+      "use_summary": false,
+      "use_chunks": true
+    },
+    "context_max_tokens": 12000,
+    "history_policy": "all-provided-sessions-as-official-rag",
+    "judge_max_tokens": 4096,
+    "extraction_decoding": "bounded",
+    "structured_limits": {
+      "entities": 16,
+      "relations": 16,
+      "name_chars": 80,
+      "description_chars": 200
+    },
+    "grammar_whitespace_chars": 8,
+    "server_structured_outputs": {
+      "backend": "xgrammar",
+      "disable_any_whitespace": true
+    },
+    "context_routing": {
+      "enabled": true,
+      "native_context_tokens": 32768,
+      "extended_context_tokens": 65536
+    }
+  },
+  "generation": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
+    "extra_body": {
+      "top_k": -1,
+      "min_p": 0.0,
+      "repetition_penalty": 1.03
+    }
+  },
+  "metrics": {
+    "model": "qwen3.5-9b",
+    "suite": "pilot",
+    "status": "judge_pending",
+    "overall": {
+      "n": 50,
+      "judged": 0,
+      "rumba_metric": null,
+      "f1": 0.3017754503067334,
+      "retrieval_recall": 0.8533333333333333,
+      "all_evidence_retrieved": 0.78,
+      "seconds": 0.7639550766401225
+    },
+    "temporal_x_session_scope": {
+      "atemporal × multi": {
+        "n": 13,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.13610589952053367,
+        "retrieval_recall": 0.7692307692307693,
+        "all_evidence_retrieved": 0.6153846153846154,
+        "seconds": 0.8942009774618782
+      },
+      "atemporal × single": {
+        "n": 13,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.3782051282051282,
+        "retrieval_recall": 0.8461538461538461,
+        "all_evidence_retrieved": 0.8461538461538461,
+        "seconds": 0.7569560994620238
+      },
+      "temporal × multi": {
+        "n": 12,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.30013227513227514,
+        "retrieval_recall": 0.8888888888888888,
+        "all_evidence_retrieved": 0.75,
+        "seconds": 0.7353865486663077
+      },
+      "temporal × single": {
+        "n": 12,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.40009515444298055,
+        "retrieval_recall": 0.9166666666666666,
+        "all_evidence_retrieved": 0.9166666666666666,
+        "seconds": 0.6590061039999758
+      }
+    },
+    "semantic": {
+      "Abstention": {
+        "n": 3,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.6666666666666666,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.95674945833404
+      },
+      "Arithmetic": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 0.75,
+        "all_evidence_retrieved": 0.5,
+        "seconds": 0.4643079584966472
+      },
+      "AsstQuery": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.3902439024390244,
+        "retrieval_recall": 0.5,
+        "all_evidence_retrieved": 0.5,
+        "seconds": 0.8858576245002041
+      },
+      "CalendarUnderstanding": {
+        "n": 3,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.5555555555555556,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.9604162083366342
+      },
+      "ComplexRelations": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.06521739130434782,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.6419231664986
+      },
+      "DateExtraction": {
+        "n": 14,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.4146876932591218,
+        "retrieval_recall": 0.8928571428571429,
+        "all_evidence_retrieved": 0.8571428571428571,
+        "seconds": 0.6199157559281697
+      },
+      "DeleteInfo": {
+        "n": 4,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 0.875,
+        "all_evidence_retrieved": 0.75,
+        "seconds": 1.0654186565006967
+      },
+      "OpenDomainType": {
+        "n": 1,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 1.4027922919995035
+      },
+      "Ordering": {
+        "n": 1,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.6666666666666666,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.5567297090019565
+      },
+      "SocialRelationship": {
+        "n": 1,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 0.0,
+        "all_evidence_retrieved": 0,
+        "seconds": 0.7502669579989742
+      },
+      "StaticUser": {
+        "n": 8,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.15486111111111112,
+        "retrieval_recall": 0.75,
+        "all_evidence_retrieved": 0.625,
+        "seconds": 0.8862830727503024
+      },
+      "TemporalCommonsense": {
+        "n": 2,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.0,
+        "retrieval_recall": 0.75,
+        "all_evidence_retrieved": 0.5,
+        "seconds": 0.5455377709986351
+      },
+      "TemporallyModifiedGeneralReasoning": {
+        "n": 3,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.26666666666666666,
+        "retrieval_recall": 0.8888888888888888,
+        "all_evidence_retrieved": 0.6666666666666666,
+        "seconds": 0.9325735829988844
+      },
+      "UpdatingInfo": {
+        "n": 4,
+        "judged": 0,
+        "rumba_metric": null,
+        "f1": 0.5,
+        "retrieval_recall": 1.0,
+        "all_evidence_retrieved": 1,
+        "seconds": 0.4581835730023158
+      }
+    },
+    "judge_parse_errors": 0
+  },
+  "qc": {
+    "expected_questions": 50,
+    "answered_questions": 50,
+    "same_question_ids": true,
+    "truncated_answers": [],
+    "llm_extraction_errors": 0,
+    "all_graphs_consistent": true,
+    "all_source_chunks_stored": true,
+    "visible_evidence_recall": 0.8166666666666668,
+    "judge_pending": true
+  },
+  "additional_qc": {
+    "empty_predictions": 0,
+    "duplicate_question_ids": 0,
+    "answers_per_user": {
+      "user_44": 14,
+      "user_61": 16,
+      "user_65": 20
+    },
+    "answer_routes": {
+      "native": 50
+    },
+    "max_answer_prompt_tokens": 13455,
+    "answer_reasoning_tokens": 0,
+    "all_evidence_sessions_retrieved_questions": 39,
+    "all_evidence_sessions_with_a_complete_chunk_in_prompt_questions": 36,
+    "extraction_routes": {
+      "native_32768": 1503,
+      "native_65536": 197
+    },
+    "ontology_relation_candidates": 4011,
+    "ontology_relations_accepted_before_merge": 2234,
+    "ontology_relations_dropped_fraction": 0.44303166292695084
+  },
+  "index": [
+    {
+      "user": "user_44",
+      "sessions": 40,
+      "chunks": 132,
+      "stored_chunks": 132,
+      "entities": 1364,
+      "relations": 657,
+      "llm_calls": 547,
+      "consistent": true,
+      "all_source_chunks_stored": true,
+      "seconds": 793.1544687499991,
+      "llm_errors": 0,
+      "routing": {
+        "native_32768": 476,
+        "native_65536": 71
+      },
+      "ontology_relation_candidates": 1320,
+      "ontology_relations_accepted_before_merge": 746,
+      "ontology_relations_dropped": {
+        "constraint_violation": 338,
+        "dangling_endpoint": 146,
+        "unknown_relation_type": 87,
+        "self_loop": 3
+      }
+    },
+    {
+      "user": "user_61",
+      "sessions": 43,
+      "chunks": 123,
+      "stored_chunks": 123,
+      "entities": 1275,
+      "relations": 677,
+      "llm_calls": 510,
+      "consistent": true,
+      "all_source_chunks_stored": true,
+      "seconds": 749.9673487909968,
+      "llm_errors": 0,
+      "routing": {
+        "native_32768": 437,
+        "native_65536": 73
+      },
+      "ontology_relation_candidates": 1320,
+      "ontology_relations_accepted_before_merge": 747,
+      "ontology_relations_dropped": {
+        "constraint_violation": 282,
+        "unknown_relation_type": 168,
+        "dangling_endpoint": 120,
+        "self_loop": 3
+      }
+    },
+    {
+      "user": "user_65",
+      "sessions": 72,
+      "chunks": 156,
+      "stored_chunks": 156,
+      "entities": 1493,
+      "relations": 631,
+      "llm_calls": 643,
+      "consistent": true,
+      "all_source_chunks_stored": true,
+      "seconds": 751.9545397089969,
+      "llm_errors": 0,
+      "routing": {
+        "native_32768": 590,
+        "native_65536": 53
+      },
+      "ontology_relation_candidates": 1371,
+      "ontology_relations_accepted_before_merge": 741,
+      "ontology_relations_dropped": {
+        "constraint_violation": 350,
+        "unknown_relation_type": 207,
+        "dangling_endpoint": 71,
+        "self_loop": 2
+      }
+    }
+  ],
+  "runtime_projection": {
+    "full_dataset_users": 85,
+    "full_dataset_sessions": 4031,
+    "full_dataset_chunks": 10766,
+    "full_dataset_questions": 1543,
+    "sample_index_seconds": 2295.0763572499927,
+    "sample_chunks": 411,
+    "observed_seconds_per_chunk": 5.584127389902659,
+    "projected_full_index_hours": 16.699643188803343,
+    "observed_answer_seconds_per_question": 0.7639550766401225,
+    "projected_full_with_answers_hours": 17.027082823041038,
+    "note": "Linear planning estimate from three pilot users at the current settings, not a measured full run; caching and history complexity may change it; Pollux time is excluded."
+  }
+}
