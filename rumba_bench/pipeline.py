@@ -4,6 +4,7 @@ from dataclasses import asdict
 import importlib.metadata
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -23,6 +24,18 @@ from .schemas import extraction_schema
 GREEDY_PARAMETERS = {"temperature": 0, "top_p": 1.0, "frequency_penalty": 0.0,
                      "presence_penalty": 0.0,
                      "extra_body": {"top_k": -1, "min_p": 0.0, "repetition_penalty": 1.0}}
+
+
+def generation_parameters(settings=None):
+    """Explicit request parameters; no checkpoint defaults. / Явные параметры генерации."""
+    settings = settings or {}
+    temperature = float(settings.get("temperature", 0))
+    top_p = float(settings.get("top_p", 1))
+    penalty = float(settings.get("repetition_penalty", 1))
+    if not all(math.isfinite(x) for x in (temperature, top_p, penalty)) or temperature < 0 or not 0 < top_p <= 1 or penalty <= 0:
+        raise ValueError("Invalid generation parameters")
+    return {**GREEDY_PARAMETERS, "temperature": temperature, "top_p": top_p,
+            "extra_body": {**GREEDY_PARAMETERS["extra_body"], "repetition_penalty": penalty}}
 
 
 def training_modules(config):
@@ -48,7 +61,7 @@ def protocol_manifest(config):
     files = ["extraction/ontology.py", "extraction/_nerel_bio_tables.py", "extraction/prompts.py",
              "extraction/retrieval.py", "loaders/_ragu_templates.py"]
     hashes = {name: digest((source / name).read_text()) for name in files}
-    return {"protocol": config["protocol"], "generation_request_defaults": GREEDY_PARAMETERS,
+    return {"protocol": config["protocol"], "generation_request_defaults": generation_parameters(config["protocol"]),
             "embedding": config["embedding"],
             "training_source_hashes": hashes,
             "runner_hashes": {p.name: digest(p.read_text()) for p in sorted((ROOT / "rumba_bench").glob("*.py"))},
@@ -65,12 +78,13 @@ def client_for(endpoint, runtime):
 
 
 class Generation:
-    def __init__(self, endpoint, runtime, cache):
+    def __init__(self, endpoint, runtime, cache, sampling=None):
         self.endpoint, self.runtime, self.cache = endpoint, runtime, Path(cache)
         self.client = client_for(endpoint, runtime)
+        self.sampling = generation_parameters(sampling)
 
-    def call(self, messages, max_tokens, stop=None, seed=42, json_schema=None):
-        request = {"model": self.endpoint["model"], "messages": messages, **GREEDY_PARAMETERS,
+    def call(self, messages, max_tokens, stop=None, seed=42, json_schema=None, allow_incomplete=False):
+        request = {"model": self.endpoint["model"], "messages": messages, **self.sampling,
                    "max_tokens": max_tokens, "seed": seed}
         if stop:
             request["stop"] = stop
@@ -89,7 +103,7 @@ class Generation:
                       "seconds": time.monotonic() - started, "response_model": response.model,
                       "system_fingerprint": response.system_fingerprint}
             write_json(path, result)
-        if result["finish_reason"] != "stop":
+        if result["finish_reason"] != "stop" and not allow_incomplete:
             raise ValueError(f"Generation incomplete ({result['finish_reason']}); raw response: {path}")
         return result
 

@@ -45,7 +45,8 @@ def extraction_paths(config, label):
     """Extraction survives embedding endpoint changes. / Извлечение не зависит от сервера векторов."""
     full = protocol_manifest(config)
     keys = ("seed", "temperature", "extraction_stage", "prompt_variant", "with_signatures",
-            "chunk_chars", "chunk_overlap_chars", "extraction_max_tokens", "extraction_decoding", "structured_limits")
+            "chunk_chars", "chunk_overlap_chars", "extraction_max_tokens", "extraction_decoding", "structured_limits",
+            "top_p", "repetition_penalty")
     manifest = {"protocol": {k: config["protocol"][k] for k in keys}, "model": config["models"][label],
                 "sources": full["training_source_hashes"],
                 "pipeline_source": full["runner_hashes"]["pipeline.py"],
@@ -61,7 +62,7 @@ def preflight(config, label):
     endpoint = config["models"].get(label)
     if not endpoint:
         raise ValueError(f"No endpoint for {label}")
-    generator = Generation(endpoint, config["runtime"], ROOT / "runs/preflight/requests")
+    generator = Generation(endpoint, config["runtime"], ROOT / "runs/preflight/requests", sampling=config["protocol"])
     models = generator.client.models.list().model_dump()
     if endpoint["model"] not in {item["id"] for item in models["data"]}:
         raise ValueError(f"Server does not serve {endpoint['model']}: {models}")
@@ -101,7 +102,7 @@ def smoke(config, label):
     prompt = build_prompt("one_stage", source, ontology.full_schema(), language="Russian",
                           variant=config["protocol"]["prompt_variant"], with_signatures=config["protocol"]["with_signatures"])
     endpoint = config["models"][label]
-    generator = Generation(endpoint, config["runtime"], ROOT / "runs/smoke/requests")
+    generator = Generation(endpoint, config["runtime"], ROOT / "runs/smoke/requests", sampling=config["protocol"])
     response = generator.call(prompt, config["protocol"]["extraction_max_tokens"],
                               json_schema=extraction_schema(ontology, config["protocol"]))
     from .pipeline import parse_extraction
@@ -126,7 +127,7 @@ def extract(config, label, suite):
     full_gate(config, label, suite)
     questions = selected_questions(suite)
     folder = extraction_paths(config, label)
-    generator = Generation(config["models"][label], config["runtime"], folder / "requests")
+    generator = Generation(config["models"][label], config["runtime"], folder / "requests", sampling=config["protocol"])
     available = generator.client.models.list()
     if config["models"][label]["model"] not in {m.id for m in available.data}:
         raise ValueError("Expected served model not present")
@@ -169,7 +170,7 @@ def answer(config, label, suite):
     full_gate(config, label, suite)
     root, folder = job_paths(config, label)
     source = extraction_paths(config, label)
-    generator = Generation(config["models"][label], config["runtime"], folder / "requests")
+    generator = Generation(config["models"][label], config["runtime"], folder / "requests", sampling=config["protocol"])
     available = generator.client.models.list()
     if config["models"][label]["model"] not in {m.id for m in available.data}:
         raise ValueError("Expected served model not present")
@@ -255,6 +256,8 @@ def main():
     config = read_json(args.config)
     config["protocol"].setdefault("extraction_decoding", "free")
     config["protocol"].setdefault("structured_limits", {"entities": 16, "relations": 16, "name_chars": 80, "description_chars": 200})
+    config["protocol"].setdefault("top_p", 1.0)
+    config["protocol"].setdefault("repetition_penalty", 1.0)
     if args.extraction_decoding:
         config["protocol"]["extraction_decoding"] = args.extraction_decoding
     if config["protocol"]["extraction_stage"] != "one_stage" or config["protocol"]["temperature"] != 0:

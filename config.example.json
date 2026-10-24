@@ -11,14 +11,13 @@
   },
   "embedding": {
     "backend": "openai",
-    "base_url": null,
-    "model": "intfloat/multilingual-e5-small",
-    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
-    "device": "cpu",
+    "base_url": "http://localhost:8001/v1",
+    "model": "bge-m3",
+    "source_model": "BAAI/bge-m3",
+    "revision": null,
     "batch_size": 16,
-    "threads": 4,
-    "query_prefix": "query: ",
-    "passage_prefix": "passage: "
+    "query_prefix": "",
+    "passage_prefix": ""
   },
   "judge": null,
   "protocol": {
@@ -46,7 +45,9 @@
     "context_max_chars": 24000,
     "candidate_pool": 100,
     "history_policy": "all-provided-sessions-as-official-rag",
-    "memory": "extracted-entities-and-relations-only"
+    "memory": "extracted-entities-and-relations-only",
+    "top_p": 1.0,
+    "repetition_penalty": 1.0
   },
   "runtime": {
     "concurrency": 2,

@@ -130,6 +130,37 @@ def test_generation_cache_and_truncation(tmp_path, config):
     tokens = record["request"]["max_tokens"]
     with pytest.raises(ValueError, match="incomplete"):
         generator.call(messages, tokens)
+    assert generator.call(messages, tokens, allow_incomplete=True)["finish_reason"] == "length"
+
+
+def test_penalty_and_temperature_are_explicit_and_isolated():
+    from rumba_bench.pipeline import generation_parameters
+    base = generation_parameters()
+    trial = generation_parameters({"temperature": 0.2, "top_p": 0.95, "repetition_penalty": 1.1})
+    assert trial["temperature"] == 0.2 and trial["top_p"] == 0.95
+    assert trial["extra_body"]["repetition_penalty"] == 1.1
+    assert base["extra_body"]["repetition_penalty"] == 1
+    for settings in ({"repetition_penalty": 0}, {"temperature": -1}, {"temperature": float('nan')}, {"top_p": 2}):
+        with pytest.raises(ValueError):
+            generation_parameters(settings)
+
+
+def test_calibration_selection_protects_required_repetition():
+    from scripts.tune_decoding import choose_penalty
+    def row(penalty, valid, qa, recall):
+        return {"sampling": {"repetition_penalty": penalty},
+                "regression": {"json_valid": valid},
+                "dev": {"qa_correct": qa, "entity_recall": recall},
+                "overall": {"duplicate_fraction": 0, "ontology_violation_fraction": 0}}
+    choices = [row(1, .5, 1, 1), row(1.03, 1, 1, 1), row(1.1, 1, .5, 1)]
+    assert choose_penalty(choices)["sampling"]["repetition_penalty"] == 1.03
+
+
+def test_calibration_preserves_numeric_signs():
+    from scripts.tune_decoding import assess
+    task = {"kind": "qa", "expected": "56"}
+    assert not assess(task, {"text": "-56", "finish_reason": "stop"}, None)["qa_correct"]
+    assert assess(task, {"text": "56.", "finish_reason": "stop"}, None)["qa_correct"]
 
 
 def test_schema_has_ontology_enums_and_configurable_bounds(config):
@@ -202,7 +233,7 @@ def test_stages_work_when_generator_embedder_and_judge_are_swapped(tmp_path, con
     monkeypatch.setattr(cli, "Encoder", embedding_is_off)
 
     class FakeGeneration:
-        def __init__(self, endpoint, runtime, cache):
+        def __init__(self, endpoint, runtime, cache, sampling=None):
             self.model = endpoint["model"]
             self.client = SimpleNamespace(models=SimpleNamespace(list=lambda: SimpleNamespace(data=[SimpleNamespace(id=model)])))
         def call(self, messages, max_tokens, **kwargs):
