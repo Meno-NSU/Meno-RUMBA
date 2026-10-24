@@ -43,6 +43,7 @@ cp config.ragu.example.json config.ragu.json
 - [restart_meno2_split_context.sh](scripts/restart_meno2_split_context.sh) — окружение, checkpoint и PID-файлы Meno-Lite-0.2.
 - [launch_split_context.sh](scripts/launch_split_context.sh) — обычный и YaRN экземпляры одних весов.
 - [launch_reranker_8192.sh](scripts/launch_reranker_8192.sh) — перезапуск реранкера с контекстом 8192.
+- [launch_embedder_8192.sh](scripts/launch_embedder_8192.sh) — BGE-M3 dense embeddings, порт 9023, контекст 8192.
 - [server_process.py](scripts/server_process.py) — состояние процесса, очистка устаревших PID и проверка портов.
 - [server_logging.sh](scripts/server_logging.sh) — логирование этапов и ошибок запуска.
 
@@ -53,7 +54,7 @@ cp config.ragu.example.json config.ragu.json
 set -e
 LAUNCHER_REF=main
 LAUNCHER_API=https://api.github.com/repos/Meno-NSU/Meno-RUMBA/contents/scripts
-for script in server_process.py server_logging.sh launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_reranker_8192.sh; do
+for script in server_process.py server_logging.sh launch_split_context.sh restart_meno2_split_context.sh launch_meno2.sh launch_reranker_8192.sh launch_embedder_8192.sh; do
   curl -4 --http1.1 -fLsS --retry 4 --retry-all-errors \
     -H 'Accept: application/vnd.github.raw+json' \
     "$LAUNCHER_API/$script?ref=$LAUNCHER_REF" -o "$script.new"
@@ -63,12 +64,13 @@ for script in server_process.py server_logging.sh launch_split_context.sh restar
   esac
   command mv -f "$script.new" "$script"
 done
+CUDA_VISIBLE_DEVICES=1 bash launch_embedder_8192.sh
 CUDA_VISIBLE_DEVICES=1 bash launch_reranker_8192.sh
 CUDA_VISIBLE_DEVICES=1 bash launch_meno2.sh
 )
 ```
 
-По умолчанию веса находятся в `../models/meno-lite-0.2` и `../models/bge-reranker-v2-m3` относительно серверного каталога запуска. Другие пути задаются через `MENO2_MODEL_PATH`, `RERANKER_MODEL_PATH`, `VLLM_ENV_DIR`, `VLLM_LAUNCH_DIR`. Обёртки находят остальные скрипты рядом с собой. Для реранкера используется `vllm_process_reranker.txt`; если прежний PID записан в другом файле, задайте `RERANKER_PID_FILE`. Неучтённый слушатель на 9024 скрипт не завершает, а выдаёт явную инструкцию.
+По умолчанию веса находятся в `../models/meno-lite-0.2`, `../models/bge-reranker-v2-m3` и `../models/bge-m3` относительно серверного каталога запуска. Другие пути задаются через `MENO2_MODEL_PATH`, `RERANKER_MODEL_PATH`, `EMBEDDER_MODEL_PATH`, `VLLM_ENV_DIR`, `VLLM_LAUNCH_DIR`. Обёртки находят остальные скрипты рядом с собой. Для реранкера используется `vllm_process_reranker.txt`, для эмбеддера — `vllm_process_embedder.txt`; если прежний PID записан в другом файле, задайте `RERANKER_PID_FILE` или `EMBEDDER_PID_FILE`. Неучтённые слушатели скрипты не завершают, а выдают явную инструкцию.
 
 Лончер различает работающий процесс, zombie и устаревший PID. Для новых запусков рядом с PID-файлом сохраняется `.identity.json` с временем рождения процесса: переиспользованный PID не считается прежним сервисом. Старые записи очищаются автоматически; неизвестный живой процесс не завершается. Перед запуском проверяется, что нужные порты свободны.
 
@@ -77,6 +79,7 @@ CUDA_VISIBLE_DEVICES=1 bash launch_meno2.sh
 - `vllm_meno2_launcher.log` — этап, время UTC, GPU 1, команда и причина ошибки запуска Meno;
 - `vllm_meno2.log`, `vllm_meno2_yarn.log` — вывод соответствующего процесса vLLM;
 - `vllm_reranker_launcher.log`, `vllm_reranker.log` — запуск и вывод реранкера.
+- `vllm_embedder_launcher.log`, `vllm_embedder.log` — запуск и вывод эмбеддера.
 
 При ошибке последние 60 строк модельных логов включаются в лог лончера. Если vLLM завершился во время запуска, сохраняется его код завершения. Вывод также идёт в терминал. Для диагностики Meno:
 
@@ -92,9 +95,11 @@ NATIVE_PID_FILE=/path/to/native.pid YARN_PID_FILE=/path/to/yarn.pid \
 bash launch_split_context.sh /path/to/checkpoint meno-lite-0.2
 ```
 
-Стартовый бюджет для H100 80GB: 0.40 GPU памяти обычному экземпляру, 0.45 — YaRN, вместе 0.85 всей карты. Остаток нужен эмбеддеру, реранкеру и пиковым выделениям. Клиентский параллелизм — 8; серверные `max-num-seqs` — 16 и 4 соответственно. Это стартовые параметры для измерения, не обещание линейного ускорения.
+Стартовый бюджет для H100 80GB: 0.40 GPU памяти обычному экземпляру, 0.45 — YaRN, 0.04 — эмбеддеру и 0.06 — реранкеру; сумма долей — 0.95 всей карты. Клиентский параллелизм — 8; серверные `max-num-seqs` — 16 у обычного Meno и 4 у остальных сервисов. Это стартовые параметры для измерения, не обещание линейного ускорения; фактическая память и возможные ошибки видны в логах лончеров.
 
 Реранкеру нужен `--max-model-len 8192`: развёртывание с лимитом 512 принимало короткий smoke, но отклоняло реальные source chunks. Эмбеддеру также нужен контекст 8192. Теперь `preflight` проверяет лимиты всех четырёх сервисов и автоматически выполняется до `smoke`, `index` и `run`, чтобы выявлять такие проблемы до извлечения историй.
+
+Для эмбеддера используется served name `bge-m3`, `/v1/embeddings`, режим `pooling`, задача `embed`, CLS pooling и L2-нормализация. BGE-M3 имеет штатное окно 8192 и размерность dense-вектора 1024; YaRN для него не нужен. Параметры: [карточка BGE-M3](https://huggingface.co/BAAI/bge-m3), [pooling в vLLM 0.29](https://docs.vllm.ai/en/v0.29.0/models/pooling_models/).
 
 Источники: [Qwen2.5: расширение контекста и статический YaRN](https://qwen.readthedocs.io/en/v2.5/deployment/vllm.html#extended-context-support), [vLLM 0.29: актуальный синтаксис](https://docs.vllm.ai/en/v0.29.0/features/context_extension/).
 

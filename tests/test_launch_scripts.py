@@ -18,7 +18,7 @@ def executable(path, contents):
 
 @pytest.mark.parametrize("script", [
     "launch_split_context.sh", "restart_meno2_split_context.sh",
-    "launch_meno2.sh", "launch_reranker_8192.sh",
+    "launch_meno2.sh", "launch_reranker_8192.sh", "launch_embedder_8192.sh",
 ])
 @pytest.mark.parametrize("fail_start", [False, True])
 def test_all_server_launchers_force_gpu_one_and_log_failures(tmp_path, script, fail_start):
@@ -65,7 +65,7 @@ except FileNotFoundError:
     pass
 sys.exit(1)
 """)
-    pidfiles = [tmp_path / name for name in ("native.pid", "yarn.pid", "reranker.pid")]
+    pidfiles = [tmp_path / name for name in ("native.pid", "yarn.pid", "reranker.pid", "embedder.pid")]
     env = {**os.environ, "PATH": str(fakebin) + os.pathsep + os.environ["PATH"],
            "VLLM_BIN": str(fakebin / "vllm"), "CUDA_VISIBLE_DEVICES": "0", "GPU_ID": "0",
            "FAKE_LAUNCH_TRACE": str(trace), "FAKE_CONFIG_CUDA": str(config_cuda),
@@ -73,7 +73,7 @@ sys.exit(1)
            "FAKE_VLLM_FAIL": "1" if fail_start else "0",
            "VLLM_LAUNCH_DIR": str(launch), "VLLM_ENV_DIR": str(activate.parent.parent),
            "NATIVE_PID_FILE": str(pidfiles[0]), "YARN_PID_FILE": str(pidfiles[1]),
-           "RERANKER_PID_FILE": str(pidfiles[2])}
+           "RERANKER_PID_FILE": str(pidfiles[2]), "EMBEDDER_PID_FILE": str(pidfiles[3])}
     args = ["bash", str(ROOT / "scripts" / script)]
     if script == "launch_split_context.sh":
         args.extend([str(tmp_path / "models/meno-lite-0.2"), "meno-lite-0.2"])
@@ -90,8 +90,16 @@ sys.exit(1)
         rows = [json.loads(line) for line in trace.read_text().splitlines()]
         assert all(row["cuda"] == "1" for row in rows)
         ports = [row["args"][row["args"].index("--port") + 1] for row in rows]
-        if script == "launch_reranker_8192.sh":
-            assert ports == ["9024"]
+        if script in ("launch_reranker_8192.sh", "launch_embedder_8192.sh"):
+            embedder = script == "launch_embedder_8192.sh"
+            assert ports == ["9023" if embedder else "9024"]
+            launched_args = rows[0]["args"]
+            assert launched_args[launched_args.index("--served-model-name") + 1] == ("bge-m3" if embedder else "bge-reranker-v2-m3")
+            assert launched_args[launched_args.index("--max-model-len") + 1] == "8192"
+            assert launched_args[launched_args.index("--runner") + 1] == "pooling"
+            if embedder:
+                assert json.loads(launched_args[launched_args.index("--pooler-config") + 1]) == {
+                    "task": "embed", "pooling_type": "CLS", "use_activation": True}
         else:
             assert ports == ["9022", "9025"]
             assert config_cuda.read_text() == "1"
