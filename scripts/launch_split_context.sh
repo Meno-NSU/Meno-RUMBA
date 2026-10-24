@@ -71,6 +71,9 @@ wait_ready() {
   return 1
 }
 
+launcher_stage "stop recorded Pollux before returning to generation"
+python "$PROCESS_HELPER" stop --pid-file "${JUDGE_PID_FILE:-vllm_process_pollux.txt}" --port 9026 --model pollux-judge-32b
+python "$PROCESS_HELPER" free --port 9026
 launcher_stage "stop recorded benchmark generators"
 python "$PROCESS_HELPER" stop-benchmark --launch-dir "$PWD" --port "$NATIVE_PORT" --long-port "$YARN_PORT"
 python "$PROCESS_HELPER" stop --pid-file "$NATIVE_PID_FILE" --port "$NATIVE_PORT" --model "$MODEL_NAME"

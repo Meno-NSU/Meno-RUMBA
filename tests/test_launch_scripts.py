@@ -100,6 +100,13 @@ sys.exit(1)
         args.extend([str(tmp_path / "models/meno-lite-0.2"), "meno-lite-0.2"])
     old_services = []
     try:
+        if script == "launch_qwen25_7b.sh" and not fail_start:
+            child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+            old_services.append(child)
+            subprocess.run([sys.executable, str(ROOT / "scripts/server_process.py"), "record",
+                            "--pid", str(child.pid), "--pid-file", str(pidfiles[4]),
+                            "--port", "9026", "--model", "pollux-judge-32b"],
+                           capture_output=True, text=True, check=True, timeout=5)
         if script == "launch_pollux_judge.sh" and not fail_start:
             # Exercise the actual shutdown of every registered generator on both
             # ports, both pooling services, and the previous judge, using only
@@ -128,6 +135,7 @@ sys.exit(1)
                        and "exit code=9" in path.read_text() for path in logs)
             return
         assert completed.returncode == 0, completed.stdout + completed.stderr
+        assert all(child.poll() is not None for child in old_services)
         rows = [json.loads(line) for line in trace.read_text().splitlines()]
         assert all(row["cuda"] == "1" for row in rows)
         ports = [row["args"][row["args"].index("--port") + 1] for row in rows]
