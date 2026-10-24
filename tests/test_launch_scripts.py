@@ -20,6 +20,7 @@ def executable(path, contents):
     "launch_split_context.sh", "restart_meno2_split_context.sh",
     "launch_meno2.sh", "launch_meno1.sh", "launch_qwen35_9b.sh", "launch_qwen25_7b.sh",
     "launch_reranker_8192.sh", "launch_embedder_8192.sh",
+    "launch_pollux_judge.sh",
 ])
 @pytest.mark.parametrize("fail_start", [False, True])
 def test_all_server_launchers_force_gpu_one_and_log_failures(tmp_path, script, fail_start):
@@ -45,10 +46,12 @@ class AutoConfig:
         data=json.loads((Path(path)/"config.json").read_text())
         return SimpleNamespace(**data.get("text_config",data))
 ''')
-    for name in ("meno-lite-0.1", "meno-lite-0.2", "Qwen3.5-9B", "Qwen2.5-7B-Instruct"):
+    for name in ("meno-lite-0.1", "meno-lite-0.2", "Qwen3.5-9B", "Qwen2.5-7B-Instruct", "pollux-judge-32b"):
         checkpoint = tmp_path / "models" / name
         checkpoint.mkdir(parents=True)
         config = {"model_type": "qwen2", "max_position_embeddings": 32768, "rope_theta": 1000000}
+        if name == "pollux-judge-32b":
+            config["architectures"] = ["Qwen2ForCausalLM"]
         if name == "Qwen3.5-9B":
             config = {"text_config": {"model_type": "qwen3_5_text", "max_position_embeddings": 262144,
                                       "rope_parameters": {"rope_type": "default", "rope_theta": 10000000,
@@ -81,7 +84,7 @@ except FileNotFoundError:
     pass
 sys.exit(1)
 """)
-    pidfiles = [tmp_path / name for name in ("native.pid", "yarn.pid", "reranker.pid", "embedder.pid")]
+    pidfiles = [tmp_path / name for name in ("native.pid", "yarn.pid", "reranker.pid", "embedder.pid", "judge.pid")]
     env = {**os.environ, "PATH": str(fakebin) + os.pathsep + os.environ["PATH"],
            "PYTHONPATH": str(fakebin),
            "VLLM_BIN": str(fakebin / "vllm"), "CUDA_VISIBLE_DEVICES": "0", "GPU_ID": "0",
@@ -90,12 +93,33 @@ sys.exit(1)
            "FAKE_VLLM_FAIL": "1" if fail_start else "0",
            "VLLM_LAUNCH_DIR": str(launch), "VLLM_ENV_DIR": str(activate.parent.parent),
            "NATIVE_PID_FILE": str(pidfiles[0]), "YARN_PID_FILE": str(pidfiles[1]),
-           "RERANKER_PID_FILE": str(pidfiles[2]), "EMBEDDER_PID_FILE": str(pidfiles[3])}
+           "RERANKER_PID_FILE": str(pidfiles[2]), "EMBEDDER_PID_FILE": str(pidfiles[3]),
+           "JUDGE_PID_FILE": str(pidfiles[4])}
     args = ["bash", str(ROOT / "scripts" / script)]
     if script == "launch_split_context.sh":
         args.extend([str(tmp_path / "models/meno-lite-0.2"), "meno-lite-0.2"])
+    old_services = []
     try:
-        completed = subprocess.run(args, cwd=launch, env=env, capture_output=True, text=True, timeout=10)
+        if script == "launch_pollux_judge.sh" and not fail_start:
+            # Exercise the actual shutdown of every registered generator on both
+            # ports, both pooling services, and the previous judge, using only
+            # owned CPU sleepers. No real GPU servers are touched by this test.
+            old_records = []
+            for tag, model in (("meno1", "meno-lite-0.1"), ("meno2", "meno-lite-0.2"),
+                               ("qwen35", "Qwen3.5-9B"), ("qwen25", "Qwen2.5-7B-Instruct")):
+                old_records.extend([(launch / f"vllm_process_{tag}.txt", 9022, model),
+                                    (launch / f"vllm_process_{tag}_yarn.txt", 9025, model)])
+            old_records.extend([(pidfiles[2], 9024, "bge-reranker-v2-m3"),
+                                (pidfiles[3], 9023, "bge-m3"),
+                                (pidfiles[4], 9026, "pollux-judge-32b")])
+            for path, port, model in old_records:
+                child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+                old_services.append(child)
+                subprocess.run([sys.executable, str(ROOT / "scripts/server_process.py"), "record",
+                                "--pid", str(child.pid), "--pid-file", str(path),
+                                "--port", str(port), "--model", model],
+                               capture_output=True, text=True, check=True, timeout=5)
+        completed = subprocess.run(args, cwd=launch, env=env, capture_output=True, text=True, timeout=20)
         if fail_start:
             assert completed.returncode != 0
             logs = list(launch.glob("*launcher.log"))
@@ -117,6 +141,18 @@ sys.exit(1)
             if embedder:
                 assert json.loads(launched_args[launched_args.index("--pooler-config") + 1]) == {
                     "task": "embed", "pooling_type": "CLS", "use_activation": True}
+        elif script == "launch_pollux_judge.sh":
+            assert old_services and all(child.poll() is not None for child in old_services)
+            assert ports == ["9026"]
+            server_args = rows[0]["args"]
+            assert server_args[server_args.index("--served-model-name") + 1] == "pollux-judge-32b"
+            assert server_args[server_args.index("--dtype") + 1] == "bfloat16"
+            assert server_args[server_args.index("--max-model-len") + 1] == "8192"
+            assert server_args[server_args.index("--gpu-memory-utilization") + 1] == "0.92"
+            assert server_args[server_args.index("--seed") + 1] == "42"
+            assert "--hf-overrides" not in server_args and "--runner" not in server_args
+            defaults = json.loads(server_args[server_args.index("--override-generation-config") + 1])
+            assert defaults["temperature"] == 0 and defaults["repetition_penalty"] == 1
         else:
             assert ports == ["9022", "9025"]
             assert config_cuda.read_text() == "1"
@@ -137,9 +173,34 @@ sys.exit(1)
         logs = list(launch.glob("*launcher.log"))
         assert logs and all("START:" in path.read_text() and "COMMAND:" in path.read_text() for path in logs)
     finally:
+        for child in old_services:
+            if child.poll() is None:
+                child.terminate()
+            child.wait(timeout=5)
         for path in pidfiles:
             if path.exists():
                 try:
                     os.kill(int(path.read_text().strip()), signal.SIGTERM)
                 except ProcessLookupError:
                     pass
+
+
+def test_pollux_rejects_regression_checkpoint_before_stopping_services(tmp_path):
+    activate = tmp_path / "vllm_0_29_0/bin/activate"
+    activate.parent.mkdir(parents=True)
+    activate.write_text(":\n")
+    checkpoint = tmp_path / "regression"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text(json.dumps({
+        "model_type": "qwen2", "architectures": ["Qwen2WithRegressionHead"],
+        "max_position_embeddings": 32768}))
+    fakebin = tmp_path / "bin"
+    fakebin.mkdir()
+    executable(fakebin / "python", f'#!/bin/sh\nexec "{sys.executable}" "$@"\n')
+    env = {**os.environ, "PATH": str(fakebin) + os.pathsep + os.environ["PATH"],
+           "VLLM_LAUNCH_DIR": str(tmp_path), "JUDGE_MODEL_PATH": str(checkpoint)}
+    completed = subprocess.run(["bash", str(ROOT / "scripts/launch_pollux_judge.sh")],
+                               cwd=tmp_path, env=env, capture_output=True, text=True, timeout=10)
+    assert completed.returncode != 0
+    assert "not the -r regression model" in completed.stdout + completed.stderr
+    assert "STAGE: stop" not in (tmp_path / "vllm_pollux_launcher.log").read_text()

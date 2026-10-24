@@ -165,6 +165,10 @@ F1 повторяет LightEval 0.13.0 из официального окруж�
 
 Pollux поднимается отдельным этапом: сначала сохраняются ответы всех трёх моделей, затем обычный/YaRN генераторы, эмбеддер и реранкер освобождают GPU, и на их месте запускается судья. Для `score` и `report` эти inference services уже не требуются; сохранённые извлечения и ответы повторять не нужно. Заполните `judge` в локальном конфиге (`base_url`, `model`, `source_model: ai-forever/pollux-judge-32b`) и передайте фактический каталог сохранённого запуска:
 
+На GPU-сервере из каталога запуска выполните `CUDA_VISIBLE_DEVICES=1 bash launch_pollux_judge.sh` ([скрипт](scripts/launch_pollux_judge.sh), рядом нужны `server_process.py` и `server_logging.sh`). Он проверит `../models/pollux-judge-32b/config.json`, затем остановит по проверенным PID-записям оба endpoint'а всех четырёх генераторов (Meno 0.1/0.2, Qwen3.5, Qwen2.5), BGE-M3, реранкер и прежнего Pollux. Неизвестный процесс на портах 9022–9026 вызывает остановку с диагностикой. GPU всегда `1`, alias `pollux-judge-32b`, API `http://localhost:9026/v1`; BF16, контекст 8192 без YaRN, память 0.92, до 4 активных последовательностей. Серверные значения по умолчанию: greedy, seed 42, repetition penalty 1.0; клиент может переопределить их в запросе. Веса берутся из локального каталога, без повторного скачивания.
+
+Лог vLLM: `vllm_pollux.log`; стадии запуска, команда, состояние GPU и ошибки: `vllm_pollux_launcher.log`. При повторном запуске логи дописываются. Переопределения путей: `VLLM_LAUNCH_DIR`, `VLLM_ENV_DIR`, `JUDGE_MODEL_PATH`, `JUDGE_PID_FILE`, `JUDGE_LOG`, `JUDGE_LAUNCH_LOG`; для pooling-процессов учитываются `EMBEDDER_PID_FILE` и `RERANKER_PID_FILE`.
+
 ```sh
 .venv-ragu/bin/python -m rumba_bench.ragu_harness score --suite pilot \
   --run-folder runs/ragu-HASH/meno-lite-0.2
