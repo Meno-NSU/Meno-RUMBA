@@ -18,7 +18,7 @@ def executable(path, contents):
 
 @pytest.mark.parametrize("script", [
     "launch_split_context.sh", "restart_meno2_split_context.sh",
-    "launch_meno2.sh", "launch_meno1.sh", "launch_qwen35_9b.sh",
+    "launch_meno2.sh", "launch_meno1.sh", "launch_qwen35_9b.sh", "launch_qwen25_7b.sh",
     "launch_reranker_8192.sh", "launch_embedder_8192.sh",
 ])
 @pytest.mark.parametrize("fail_start", [False, True])
@@ -45,7 +45,7 @@ class AutoConfig:
         data=json.loads((Path(path)/"config.json").read_text())
         return SimpleNamespace(**data.get("text_config",data))
 ''')
-    for name in ("meno-lite-0.1", "meno-lite-0.2", "Qwen3.5-9B"):
+    for name in ("meno-lite-0.1", "meno-lite-0.2", "Qwen3.5-9B", "Qwen2.5-7B-Instruct"):
         checkpoint = tmp_path / "models" / name
         checkpoint.mkdir(parents=True)
         config = {"model_type": "qwen2", "max_position_embeddings": 32768, "rope_theta": 1000000}
@@ -123,7 +123,7 @@ sys.exit(1)
             assert "--hf-overrides" not in rows[0]["args"]
             qwen35 = script == "launch_qwen35_9b.sh"
             assert ("--hf-overrides" in rows[1]["args"]) is not qwen35
-            model = "Qwen3.5-9B" if qwen35 else "meno-lite-0.1" if script == "launch_meno1.sh" else "meno-lite-0.2"
+            model = {"launch_qwen35_9b.sh": "Qwen3.5-9B", "launch_qwen25_7b.sh": "Qwen2.5-7B-Instruct", "launch_meno1.sh": "meno-lite-0.1"}.get(script, "meno-lite-0.2")
             for row, context in zip(rows, (32768, 65536)):
                 server_args = row["args"]
                 assert server_args[server_args.index("--served-model-name") + 1] == model

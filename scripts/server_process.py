@@ -130,9 +130,9 @@ def require_free_port(port):
 
 
 def stop_benchmark(launch_dir, native_port=9022, long_port=9025):
-    """Switch only the three known generators; pooling services stay running."""
+    """Switch only known recorded generators; pooling services stay running."""
     for tag, model in (("meno2", "meno-lite-0.2"), ("meno1", "meno-lite-0.1"),
-                       ("qwen35", "Qwen3.5-9B")):
+                       ("qwen35", "Qwen3.5-9B"), ("qwen25", "Qwen2.5-7B-Instruct")):
         stop(Path(launch_dir) / f"vllm_process_{tag}.txt", native_port, model)
         stop(Path(launch_dir) / f"vllm_process_{tag}_yarn.txt", long_port, model)
 
