@@ -1,0 +1,11 @@
+.venv/
+.cache/
+__pycache__/
+.pytest_cache/
+data/
+runs/
+*.pyc
+.DS_Store
+.env
+.env.*
+llm-training/
