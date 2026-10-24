@@ -42,6 +42,7 @@ from .report import comparison, make_report
 from .upstream import load_official
 from .ragu_decoding import schema_grammar
 from .ragu_routing import ContextRoutingLLM
+from .checkpoint import READY, mark_user_closed
 
 RAGU_REVISION = "abd3f2958c186dc624bbd42560ad6e1e7033efaf"
 
@@ -457,6 +458,9 @@ async def execute(args):
             raise ValueError("Pilot question IDs do not match prepared dataset")
         write_json(harness.folder / (args.suite + "_question_ids.json"), [q["id"] for q in questions])
         for user in sorted({q["user_id"] for q in questions}):
+            # Remove a restored marker BEFORE opening any database. The cluster
+            # supervisor snapshots only users marked after all stores close.
+            (harness.folder / "graphs" / user / READY).unlink(missing_ok=True)
             graph = harness.graph(user)
             try:
                 report_path = Path(Settings.storage_folder) / "build_report.json"
@@ -472,6 +476,9 @@ async def execute(args):
                         await harness.answer(engine, question, provenance, args.suite)
             finally:
                 await graph.index.close()
+            if args.command == "run":
+                mark_user_closed(harness.folder, user, args.suite,
+                                 [q for q in questions if q["user_id"] == user])
         if args.command == "run":
             report = make_report(harness.folder, args.suite)
             rows = read_json(harness.folder / args.suite / "predictions.json")
