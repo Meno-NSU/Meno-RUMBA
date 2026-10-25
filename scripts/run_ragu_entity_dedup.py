@@ -2,8 +2,9 @@
 """Resume a worker with exact description deduplication before summarization.
 
 Sampling, schemas, prompts, extraction results and provenance are unchanged.
-Only repeated, byte-identical entries in EntitySummarizer's description list
-are removed before the existing summarization prompt is rendered. The original
+Only a homogeneous list of repeated, byte-identical descriptions is collapsed
+before the existing summarization prompt is rendered. Mixed lists remain byte
+identical, including their duplicates, to preserve successful cached requests. The original
 duplicate count and every source/document reference remain intact.
 """
 import argparse
@@ -26,7 +27,7 @@ def install_dedup_patch(summarizer, audit_path, lineage_id, context=lambda: None
         if not isinstance(descriptions, list) or any(not isinstance(x, str) for x in descriptions):
             raise ValueError('Entity descriptions must be a list of strings')
         unique = list(dict.fromkeys(descriptions))
-        if len(unique) != len(descriptions):
+        if len(unique) == 1 and len(descriptions) > 1:
             event = {'time': time.time(), 'kind': 'exact_entity_description_dedup',
                      'lineage_id': lineage_id, 'context': context(),
                      'input_count': len(descriptions), 'unique_count': len(unique),
@@ -37,7 +38,8 @@ def install_dedup_patch(summarizer, audit_path, lineage_id, context=lambda: None
             audit_path.parent.mkdir(parents=True, exist_ok=True)
             with audit_path.open('a') as output:
                 output.write(json.dumps(event, ensure_ascii=False) + '\n')
-        return await original(self, unique)
+            return await original(self, unique)
+        return await original(self, descriptions)
 
     summarizer._summarize_by_cluster_if_needed = deduplicated
     return original

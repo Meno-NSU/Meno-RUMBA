@@ -11,29 +11,30 @@ dedup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dedup)
 
 
-def test_exact_duplicates_removed_but_dates_negations_and_order_preserved(tmp_path):
+def test_homogeneous_duplicates_collapsed_and_audited(tmp_path):
     class Summarizer:
         async def _summarize_by_cluster_if_needed(self, descriptions):
             return descriptions
     audit = tmp_path / 'audit.jsonl'
     dedup.install_dedup_patch(Summarizer, audit, 'repair', lambda: 'user_2')
-    source = ['В апреле посетил Францию.', 'В апреле посетил Францию.',
-              'В мае НЕ посетил Францию.', 'В апреле посетил Францию. ']
+    source = ['В апреле посетил Францию.'] * 9
     result = asyncio.run(Summarizer()._summarize_by_cluster_if_needed(source))
-    assert result == [source[0], source[2], source[3]]
-    assert len(source) == 4
+    assert result == [source[0]]
+    assert len(source) == 9
     event = json.loads(audit.read_text())
     assert event['input'] == source and event['retained'] == result
     assert event['unique_values_preserved'] and event['context'] == 'user_2'
 
 
-def test_unique_descriptions_are_unchanged_without_an_audit_event(tmp_path):
+def test_mixed_lists_remain_byte_identical_even_with_duplicate_facts(tmp_path):
     class Summarizer:
         async def _summarize_by_cluster_if_needed(self, descriptions):
             return descriptions
     audit = tmp_path / 'audit.jsonl'
     dedup.install_dedup_patch(Summarizer, audit, 'repair')
-    assert asyncio.run(Summarizer()._summarize_by_cluster_if_needed(['A', 'a'])) == ['A', 'a']
+    source = ['В апреле посетил Францию.', 'В апреле посетил Францию.',
+              'В мае НЕ посетил Францию.', 'В апреле посетил Францию. ']
+    assert asyncio.run(Summarizer()._summarize_by_cluster_if_needed(source)) == source
     assert not audit.exists()
 
 
