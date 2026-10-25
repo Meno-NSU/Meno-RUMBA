@@ -35,7 +35,10 @@ def main():
     p.add_argument('--source', required=True)
     p.add_argument('--destination', type=Path, required=True)
     p.add_argument('--state', type=Path, required=True)
+    p.add_argument('--io-timeout', type=int, default=300,
+                   help='Allow slow remote filesystem reads without treating them as a lost connection')
     a = p.parse_args()
+    if not 30 <= a.io_timeout <= 3600: p.error('--io-timeout must be between30 and3600 seconds')
     a.destination = a.destination.resolve(); a.state = a.state.resolve()
     a.destination.mkdir(parents=True, exist_ok=True); a.state.parent.mkdir(parents=True, exist_ok=True)
     lock = a.state.with_suffix('.lock').open('a'); fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -47,7 +50,7 @@ def main():
     if not source.startswith('/') or '..' in Path(source).parts: raise ValueError('Use an absolute source directory')
     env = dict(os.environ, RUMBA_SSH_WRAPPER=str(a.ssh_wrapper.resolve()))
     rsh = shlex.join([sys.executable, str(Path(__file__).resolve()), '--rsync-transport'])
-    command = ['rsync', '-rltz', '--partial', '--timeout=60', '--progress', '--stats', '-e', rsh,
+    command = ['rsync', '-rltz', '--partial', f'--timeout={a.io_timeout}', '--progress', '--stats', '-e', rsh,
                'benchmark-cluster:' + source.rstrip('/') + '/', str(a.destination) + '/']
     logpath = a.state.with_suffix('.log')
     try:
