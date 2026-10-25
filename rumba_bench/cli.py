@@ -227,7 +227,24 @@ def run(config, label, suite):
     answer(config, label, suite)
 
 
-def score(config, label, suite, folder_override=None):
+def scoring_coverage(rows, questions, allow_partial=False):
+    expected = {q['id']: q for q in questions}
+    ids = [row['id'] for row in rows]
+    if len(ids) != len(set(ids)) or not set(ids) <= set(expected):
+        raise ValueError('Unknown or duplicate saved question IDs')
+    for row in rows:
+        if any(row[k] != expected[row['id']][k] for k in ('question', 'answer', 'question_date')):
+            raise ValueError('Saved answer does not match the prepared dataset')
+        if row.get('truncated') or row.get('finish_reason', 'stop') != 'stop' or not row.get('prediction', '').strip():
+            raise ValueError('Cannot score an invalid or truncated answer')
+    if not rows or (set(ids) != set(expected) and not allow_partial):
+        raise ValueError(f'Expected {len(expected)} answers, found {len(rows)}; partial scoring requires --allow-partial')
+    return {'status': 'partial' if len(ids) < len(expected) else 'complete',
+            'expected_questions': len(expected), 'included_questions': len(ids),
+            'included_ids': sorted(ids), 'missing_ids': sorted(set(expected) - set(ids))}
+
+
+def score(config, label, suite, folder_override=None, allow_partial=False, question_ids=None):
     if not config.get("judge"):
         raise ValueError("Configure independent judge endpoint first; no self-judging")
     judge = config["judge"]
@@ -243,14 +260,21 @@ def score(config, label, suite, folder_override=None):
     write_json(identity_path, judge)
     official = load_official()
     paths = sorted((folder / "answers" / suite).glob("*.json"))
-    expected = len(selected_questions(suite))
-    if len(paths) != expected:
-        raise ValueError(f"Expected {expected} answers, found {len(paths)}")
+    coverage = scoring_coverage([read_json(p) for p in paths], selected_questions(suite), allow_partial)
+    write_json(folder / suite / 'scoring-coverage.json', coverage)
+    if question_ids is not None:
+        question_ids = set(question_ids)
+        if not question_ids or not question_ids <= set(coverage['included_ids']):
+            raise ValueError('Requested scoring cohort is empty or contains unavailable answers')
+        paths = [p for p in paths if read_json(p)['id'] in question_ids]
 
     def process(path):
         row = read_json(path)
         output = folder / "scores" / suite / path.name
         if output.exists():
+            previous = read_json(output)
+            if previous.get('prediction') != row['prediction'] or previous.get('judge') != judge:
+                raise ValueError('Existing score belongs to another prediction or judge')
             return
         question = f"{row['question']} (текущая дата: {timestamp(row['question_date']).date()})"
         messages = official["judge_template"](question, row["prediction"], row["answer"])

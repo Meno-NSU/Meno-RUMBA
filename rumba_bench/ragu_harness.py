@@ -422,7 +422,8 @@ async def execute(args):
             raise ValueError("--run-folder must identify a saved RAGU model run")
         if args.command == "score":
             from .cli import score
-            score(config, args.model, args.suite, folder_override=folder)
+            score(config, args.model, args.suite, folder_override=folder,
+                  allow_partial=args.allow_partial)
         else:
             make_report(folder, args.suite)
             print(comparison(folder.parent, args.suite, config["models"]))
@@ -506,6 +507,8 @@ def main():
     parser.add_argument("--model", default="meno-lite-0.2")
     parser.add_argument("--suite", choices=("pilot", "full"), default="pilot")
     parser.add_argument("--run-folder", type=Path, help="Saved model folder, required for score/report")
+    parser.add_argument("--allow-partial", action="store_true",
+                        help="Score explicitly incomplete saved results; record missing IDs and coverage")
     args = parser.parse_args()
     logger.remove()
     logger.add(lambda message: print(message, end="", flush=True), level="WARNING")

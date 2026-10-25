@@ -40,6 +40,13 @@ def make_report(folder, suite):
               "overall": summary(rows), "temporal_x_session_scope": {k: summary(v) for k, v in sorted(grouped.items())},
               "semantic": {k: summary(v) for k, v in sorted(semantic.items())},
               "judge_parse_errors": sum(r.get("judge_parse_error", False) for r in rows)}
+    coverage_path = folder / suite / 'scoring-coverage.json'
+    if not coverage_path.exists():
+        coverage_path = folder / 'coverage.json'
+    if coverage_path.exists():
+        report['dataset_coverage'] = read_json(coverage_path)
+        if report['dataset_coverage']['status'] == 'partial':
+            report['status'] += '_partial'
     write_json(folder / suite / "report.json", report)
     write_json(folder / suite / "predictions.json", rows)
     return report
@@ -70,6 +77,8 @@ def comparison(root, suite, model_labels):
             csv_rows.append({"category": group, "model": label, **metrics})
         table.append("| " + group + " | " + " | ".join(cells) + " |")
     prefix = "# RUMBA RU — " + suite + "\n\n"
+    if any(r.get('dataset_coverage', {}).get('status') == 'partial' for r in reports.values()):
+        prefix += "Частичные остановленные прогоны: показатели относятся только к сохранённым вопросам; наборы моделей могут различаться.\n\n"
     if suite == "pilot":
         prefix += "Пилот для отладки: 50 вопросов из нескольких пользователей с покрытием четырёх групп. Числа не являются оценкой всей выборки.\n\n"
     text = prefix + "\n".join(table) + "\n\nRUMBA: официальный промпт Pollux и разбор оценки; F1: LightEval 0.13.0, без нормализации.\n"

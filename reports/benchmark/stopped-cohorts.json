@@ -1,0 +1,297 @@
+{
+  "status": "judge_pending",
+  "partial_dataset": true,
+  "expected_test_questions": 1543,
+  "cohorts": {
+    "meno02_shared": {
+      "status": "judge_pending",
+      "paired": true,
+      "models": {
+        "meno-lite-0.2": {
+          "overall": {
+            "n": 345,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.3060941227162327
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 129,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.15204205207792765
+            },
+            "atemporal × single": {
+              "n": 198,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.40944444444444444
+            },
+            "temporal × multi": {
+              "n": 14,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.24421768707482994
+            },
+            "temporal × single": {
+              "n": 4,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.375
+            }
+          }
+        },
+        "meno-lite-0.1": {
+          "overall": {
+            "n": 345,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.22320290375186874
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 129,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.12049723923626324
+            },
+            "atemporal × single": {
+              "n": 198,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.28591203640223245
+            },
+            "temporal × multi": {
+              "n": 14,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.1797815279958137
+            },
+            "temporal × single": {
+              "n": 4,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.5833333333333333
+            }
+          }
+        },
+        "qwen2.5-7b-instruct": {
+          "overall": {
+            "n": 345,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.24580991038625338
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 129,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.13439602733275863
+            },
+            "atemporal × single": {
+              "n": 198,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.3183294763597794
+            },
+            "temporal × multi": {
+              "n": 14,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.2336734693877551
+            },
+            "temporal × single": {
+              "n": 4,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.29166666666666663
+            }
+          }
+        }
+      }
+    },
+    "qwen_shared": {
+      "status": "judge_pending",
+      "paired": true,
+      "models": {
+        "qwen2.5-7b-instruct": {
+          "overall": {
+            "n": 1026,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.23196387628985204
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 323,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.18234458295046715
+            },
+            "atemporal × single": {
+              "n": 471,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.29451431203511835
+            },
+            "temporal × multi": {
+              "n": 91,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.14945183456906708
+            },
+            "temporal × single": {
+              "n": 141,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.18993814798625158
+            }
+          }
+        },
+        "meno-lite-0.1": {
+          "overall": {
+            "n": 1026,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.20341494716501204
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 323,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.13830286035005526
+            },
+            "atemporal × single": {
+              "n": 471,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.27436263316149473
+            },
+            "temporal × multi": {
+              "n": 91,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.14160408470363223
+            },
+            "temporal × single": {
+              "n": 141,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.15546907780950334
+            }
+          }
+        }
+      }
+    },
+    "available": {
+      "status": "judge_pending",
+      "paired": false,
+      "models": {
+        "meno-lite-0.1": {
+          "overall": {
+            "n": 1508,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.2033974989671327
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 439,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.1536855779460861
+            },
+            "atemporal × single": {
+              "n": 659,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.2743629789824992
+            },
+            "temporal × multi": {
+              "n": 153,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.12743684591607454
+            },
+            "temporal × single": {
+              "n": 257,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.15156583326645126
+            }
+          }
+        },
+        "qwen2.5-7b-instruct": {
+          "overall": {
+            "n": 1026,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.23196387628985204
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 323,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.18234458295046715
+            },
+            "atemporal × single": {
+              "n": 471,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.29451431203511835
+            },
+            "temporal × multi": {
+              "n": 91,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.14945183456906708
+            },
+            "temporal × single": {
+              "n": 141,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.18993814798625158
+            }
+          }
+        },
+        "meno-lite-0.2": {
+          "overall": {
+            "n": 345,
+            "judged": 0,
+            "rumba_metric": null,
+            "f1": 0.3060941227162327
+          },
+          "temporal_x_session_scope": {
+            "atemporal × multi": {
+              "n": 129,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.15204205207792765
+            },
+            "atemporal × single": {
+              "n": 198,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.40944444444444444
+            },
+            "temporal × multi": {
+              "n": 14,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.24421768707482994
+            },
+            "temporal × single": {
+              "n": 4,
+              "judged": 0,
+              "rumba_metric": null,
+              "f1": 0.375
+            }
+          }
+        }
+      }
+    }
+  }
+}
