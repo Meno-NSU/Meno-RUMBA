@@ -22,3 +22,19 @@ def test_scheduler_gpu_ids_are_not_replaced_with_host_numbers():
     ids = ["GPU-" + str(i) for i in range(8)]
     assert pair.allocated_devices({"SLURM_JOB_ID": "42", "CUDA_VISIBLE_DEVICES": ",".join(ids)}, "", 8) == ids
     with pytest.raises(ValueError):pair.allocated_devices({"SLURM_JOB_ID": "42", "CUDA_VISIBLE_DEVICES": "0,1"}, "", 8)
+
+
+def test_pooling_configs_without_weights_are_not_ready(tmp_path):
+    (tmp_path / "config.json").write_text("{}")
+    with pytest.raises(ValueError):pair.validate_pooling_weights(tmp_path)
+    (tmp_path / "pytorch_model.bin").write_bytes(b"x" * 2048)
+    assert pair.validate_pooling_weights(tmp_path) == ["pytorch_model.bin"]
+
+
+def test_partial_pooling_shards_are_not_ready(tmp_path):
+    import json
+    (tmp_path / "model.safetensors.index.json").write_text(json.dumps({"weight_map": {"a": "part1.safetensors", "b": "part2.safetensors"}}))
+    (tmp_path / "part1.safetensors").write_bytes(b"x" * 2048)
+    with pytest.raises(ValueError):pair.validate_pooling_weights(tmp_path)
+    (tmp_path / "part2.safetensors").write_bytes(b"x" * 2048)
+    assert pair.validate_pooling_weights(tmp_path) == ["part1.safetensors", "part2.safetensors"]

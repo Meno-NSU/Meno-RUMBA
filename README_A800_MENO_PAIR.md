@@ -22,6 +22,8 @@
 
 Веса берутся из `MODELS_DIR` (по умолчанию `../models`): `meno-lite-0.1`, `meno-lite-0.2`, `bge-m3`, `bge-reranker-v2-m3`. Допустимы симлинки на уже существующие каталоги и HF snapshots; большие файлы не копируются ради изменения имени. Скрипт проверяет все шарды и токенизаторы Meno. Для каждого запуска сохраняются реальные пути, SHA-256 config/index и размеры/mtime шардов. Это идентификация операторских весов, а не заявление о подтверждённой ревизии их содержимого.
 
+У BGE-M3 основными весами может быть `pytorch_model.bin`. Фильтр скачивания только `*.safetensors` оставит один токенизатор и конфиги: такой каталог не готов для vLLM. Перед `ready` проверьте реальные `.bin`/`.safetensors` и все шарды, перечисленные в index JSON. Проверка pooling-весов также включена в launcher; исходный pinned запуск дополнительно защищён отдельным asset gate на headnode.
+
 Обязательные переменные из инструкции кластера заданы в sbatch: `PIP_CACHE_DIR`, `PYTORCH_CUDA_ALLOC_CONF`, `HF_HOME`, `DO_NOT_TRACK=1`, `HF_DATASETS_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, `ANONYMIZED_TELEMETRY=False`, `OUTLINES_CACHE_DIR`, `TORCH_HOME`, `XDG_CACHE_HOME`, `TRITON_CACHE_DIR`, `FLASHINFER_WORKSPACE_BASE`. Дополнительно включён `HF_HUB_OFFLINE=1`; HTTP-прокси подготовки удаляются из окружения вычислительного задания. У отдельных vLLM executor разные подкаталоги kernel-кэшей.
 
 ## Запуск

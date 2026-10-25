@@ -53,6 +53,21 @@ def allocated_devices(environment, job_description, visible_count):
     return ids
 
 
+def validate_pooling_weights(path):
+    """Some official pooling checkpoints provide .bin rather than safetensors."""
+    path = Path(path)
+    for name in ("model.safetensors", "pytorch_model.bin"):
+        if (path / name).is_file() and (path / name).stat().st_size >= 1024:
+            return [name]
+    for name in ("model.safetensors.index.json", "pytorch_model.bin.index.json"):
+        if not (path / name).is_file():
+            continue
+        shards = sorted(set(read_json(path / name)["weight_map"].values()))
+        if shards and all((path / f).is_file() and (path / f).stat().st_size >= 1024 for f in shards):
+            return shards
+    raise ValueError(f"Missing/incomplete pooling weights; configs alone are not sufficient: {path}")
+
+
 def model_plan(models, server, devices):
     common = ["--host", "127.0.0.1", "--dtype", "half", "--seed", "42",
               "--gpu-memory-utilization", "0.90", "--enable-prefix-caching", "--enable-chunked-prefill",
@@ -100,6 +115,7 @@ def model_plan(models, server, devices):
         path = Path(models) / alias
         if not (path / "config.json").is_file():
             raise ValueError(f"Missing local pooling model: {path}")
+        validate_pooling_weights(path)
         args = [str(server), "serve", str(path), "--served-model-name", alias, "--runner", "pooling",
                 "--host", "127.0.0.1", "--port", str(port), "--dtype", "half", "--max-model-len", "8192",
                 "--max-num-seqs", "8", "--max-num-batched-tokens", "8192", "--gpu-memory-utilization", "0.90"]
