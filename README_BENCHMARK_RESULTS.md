@@ -18,26 +18,26 @@
 
 | Модель | n | Оценено | RUMBA | F1 |
 |---|---:|---:|---:|---:|
-| meno-lite-0.2 | 345 | 0/345 | ожидается | 0.3061 |
-| meno-lite-0.1 | 345 | 0/345 | ожидается | 0.2232 |
-| qwen2.5-7b-instruct | 345 | 0/345 | ожидается | 0.2458 |
+| meno-lite-0.2 | 345 | 345/345 | 0.5594 | 0.3061 |
+| meno-lite-0.1 | 345 | 345/345 | 0.5014 | 0.2232 |
+| qwen2.5-7b-instruct | 345 | 345/345 | 0.5536 | 0.2458 |
 
 ### Temporal × session-scope
 
 | Категория | Модель | n | Оценено | RUMBA | F1 |
 |---|---|---:|---:|---:|---:|
-| atemporal × single | meno-lite-0.2 | 198 | 0/198 | ожидается | 0.4094 |
-| atemporal × single | meno-lite-0.1 | 198 | 0/198 | ожидается | 0.2859 |
-| atemporal × single | qwen2.5-7b-instruct | 198 | 0/198 | ожидается | 0.3183 |
-| atemporal × multi | meno-lite-0.2 | 129 | 0/129 | ожидается | 0.1520 |
-| atemporal × multi | meno-lite-0.1 | 129 | 0/129 | ожидается | 0.1205 |
-| atemporal × multi | qwen2.5-7b-instruct | 129 | 0/129 | ожидается | 0.1344 |
-| temporal × single | meno-lite-0.2 | 4 | 0/4 | ожидается | 0.3750 |
-| temporal × single | meno-lite-0.1 | 4 | 0/4 | ожидается | 0.5833 |
-| temporal × single | qwen2.5-7b-instruct | 4 | 0/4 | ожидается | 0.2917 |
-| temporal × multi | meno-lite-0.2 | 14 | 0/14 | ожидается | 0.2442 |
-| temporal × multi | meno-lite-0.1 | 14 | 0/14 | ожидается | 0.1798 |
-| temporal × multi | qwen2.5-7b-instruct | 14 | 0/14 | ожидается | 0.2337 |
+| atemporal × single | meno-lite-0.2 | 198 | 198/198 | 0.6616 | 0.4094 |
+| atemporal × single | meno-lite-0.1 | 198 | 198/198 | 0.6364 | 0.2859 |
+| atemporal × single | qwen2.5-7b-instruct | 198 | 198/198 | 0.6616 | 0.3183 |
+| atemporal × multi | meno-lite-0.2 | 129 | 129/129 | 0.4109 | 0.1520 |
+| atemporal × multi | meno-lite-0.1 | 129 | 129/129 | 0.3101 | 0.1205 |
+| atemporal × multi | qwen2.5-7b-instruct | 129 | 129/129 | 0.3953 | 0.1344 |
+| temporal × single | meno-lite-0.2 | 4 | 4/4 | 0.7500 | 0.3750 |
+| temporal × single | meno-lite-0.1 | 4 | 4/4 | 0.5000 | 0.5833 |
+| temporal × single | qwen2.5-7b-instruct | 4 | 4/4 | 0.5000 | 0.2917 |
+| temporal × multi | meno-lite-0.2 | 14 | 14/14 | 0.4286 | 0.2442 |
+| temporal × multi | meno-lite-0.1 | 14 | 14/14 | 0.3571 | 0.1798 |
+| temporal × multi | qwen2.5-7b-instruct | 14 | 14/14 | 0.5000 | 0.2337 |
 
 ## Общие 1026 вопросов Qwen
 
@@ -45,21 +45,21 @@
 
 | Модель | n | Оценено | RUMBA | F1 |
 |---|---:|---:|---:|---:|
-| qwen2.5-7b-instruct | 1026 | 0/1026 | ожидается | 0.2320 |
-| meno-lite-0.1 | 1026 | 0/1026 | ожидается | 0.2034 |
+| qwen2.5-7b-instruct | 1026 | 345/1026 | ожидается | 0.2320 |
+| meno-lite-0.1 | 1026 | 345/1026 | ожидается | 0.2034 |
 
 ### Temporal × session-scope
 
 | Категория | Модель | n | Оценено | RUMBA | F1 |
 |---|---|---:|---:|---:|---:|
-| atemporal × single | qwen2.5-7b-instruct | 471 | 0/471 | ожидается | 0.2945 |
-| atemporal × single | meno-lite-0.1 | 471 | 0/471 | ожидается | 0.2744 |
-| atemporal × multi | qwen2.5-7b-instruct | 323 | 0/323 | ожидается | 0.1823 |
-| atemporal × multi | meno-lite-0.1 | 323 | 0/323 | ожидается | 0.1383 |
-| temporal × single | qwen2.5-7b-instruct | 141 | 0/141 | ожидается | 0.1899 |
-| temporal × single | meno-lite-0.1 | 141 | 0/141 | ожидается | 0.1555 |
-| temporal × multi | qwen2.5-7b-instruct | 91 | 0/91 | ожидается | 0.1495 |
-| temporal × multi | meno-lite-0.1 | 91 | 0/91 | ожидается | 0.1416 |
+| atemporal × single | qwen2.5-7b-instruct | 471 | 198/471 | ожидается | 0.2945 |
+| atemporal × single | meno-lite-0.1 | 471 | 198/471 | ожидается | 0.2744 |
+| atemporal × multi | qwen2.5-7b-instruct | 323 | 129/323 | ожидается | 0.1823 |
+| atemporal × multi | meno-lite-0.1 | 323 | 129/323 | ожидается | 0.1383 |
+| temporal × single | qwen2.5-7b-instruct | 141 | 4/141 | ожидается | 0.1899 |
+| temporal × single | meno-lite-0.1 | 141 | 4/141 | ожидается | 0.1555 |
+| temporal × multi | qwen2.5-7b-instruct | 91 | 14/91 | ожидается | 0.1495 |
+| temporal × multi | meno-lite-0.1 | 91 | 14/91 | ожидается | 0.1416 |
 
 ## Все доступные ответы каждой модели
 
@@ -67,25 +67,25 @@
 
 | Модель | n | Оценено | RUMBA | F1 |
 |---|---:|---:|---:|---:|
-| meno-lite-0.1 | 1508 | 0/1508 | ожидается | 0.2034 |
-| qwen2.5-7b-instruct | 1026 | 0/1026 | ожидается | 0.2320 |
-| meno-lite-0.2 | 345 | 0/345 | ожидается | 0.3061 |
+| meno-lite-0.1 | 1508 | 345/1508 | ожидается | 0.2034 |
+| qwen2.5-7b-instruct | 1026 | 345/1026 | ожидается | 0.2320 |
+| meno-lite-0.2 | 345 | 345/345 | 0.5594 | 0.3061 |
 
 ### Temporal × session-scope
 
 | Категория | Модель | n | Оценено | RUMBA | F1 |
 |---|---|---:|---:|---:|---:|
-| atemporal × single | meno-lite-0.1 | 659 | 0/659 | ожидается | 0.2744 |
-| atemporal × single | qwen2.5-7b-instruct | 471 | 0/471 | ожидается | 0.2945 |
-| atemporal × single | meno-lite-0.2 | 198 | 0/198 | ожидается | 0.4094 |
-| atemporal × multi | meno-lite-0.1 | 439 | 0/439 | ожидается | 0.1537 |
-| atemporal × multi | qwen2.5-7b-instruct | 323 | 0/323 | ожидается | 0.1823 |
-| atemporal × multi | meno-lite-0.2 | 129 | 0/129 | ожидается | 0.1520 |
-| temporal × single | meno-lite-0.1 | 257 | 0/257 | ожидается | 0.1516 |
-| temporal × single | qwen2.5-7b-instruct | 141 | 0/141 | ожидается | 0.1899 |
-| temporal × single | meno-lite-0.2 | 4 | 0/4 | ожидается | 0.3750 |
-| temporal × multi | meno-lite-0.1 | 153 | 0/153 | ожидается | 0.1274 |
-| temporal × multi | qwen2.5-7b-instruct | 91 | 0/91 | ожидается | 0.1495 |
-| temporal × multi | meno-lite-0.2 | 14 | 0/14 | ожидается | 0.2442 |
+| atemporal × single | meno-lite-0.1 | 659 | 198/659 | ожидается | 0.2744 |
+| atemporal × single | qwen2.5-7b-instruct | 471 | 198/471 | ожидается | 0.2945 |
+| atemporal × single | meno-lite-0.2 | 198 | 198/198 | 0.6616 | 0.4094 |
+| atemporal × multi | meno-lite-0.1 | 439 | 129/439 | ожидается | 0.1537 |
+| atemporal × multi | qwen2.5-7b-instruct | 323 | 129/323 | ожидается | 0.1823 |
+| atemporal × multi | meno-lite-0.2 | 129 | 129/129 | 0.4109 | 0.1520 |
+| temporal × single | meno-lite-0.1 | 257 | 4/257 | ожидается | 0.1516 |
+| temporal × single | qwen2.5-7b-instruct | 141 | 4/141 | ожидается | 0.1899 |
+| temporal × single | meno-lite-0.2 | 4 | 4/4 | 0.7500 | 0.3750 |
+| temporal × multi | meno-lite-0.1 | 153 | 14/153 | ожидается | 0.1274 |
+| temporal × multi | qwen2.5-7b-instruct | 91 | 14/91 | ожидается | 0.1495 |
+| temporal × multi | meno-lite-0.2 | 14 | 14/14 | 0.4286 | 0.2442 |
 
 Сырые диалоги, личные факты, ответы моделей и причины судейских оценок в репозиторий не публикуются. Здесь сохранены только агрегаты.
