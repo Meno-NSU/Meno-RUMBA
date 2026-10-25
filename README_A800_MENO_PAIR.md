@@ -4,6 +4,25 @@
 
 Этот профиль использует шесть GPU A100/A800 по 80 GB на одном exclusive-узле с 32 CPU. При проверке фактического узла обнаружены десять A800 80 GB и драйвер 560.35.05. В целевой очереди `a800` GPU GRES не настроен: шаблон запрашивает целиком один узел через `--exclusive`, без `--gres`. Если `CUDA_VISIBLE_DEVICES` назначен Slurm, используются только эти устройства. Если переменной нет, скрипт проверяет exclusive-выделение одного узла через `scontrol`, прежде чем выбирать локальные GPU. Запуск на login node запрещён.
 
+## Ускорение Meno 0.2 свободными GPU
+
+На узле с десятью A800 80 GB суммарно около 800 GB VRAM. Память разных GPU сама по себе не объединяется. Для этого эксперимента свободные четыре устройства используются как дополнительные независимые копии Meno 0.2: две native 32768 и две YaRN 65536. GPU Meno 0.1, BGE-M3 и реранкера остаются прежними.
+
+`scripts/launch_meno02_replicas.py --project <checkout>` запускается отдельным `srun --jobid=<job> --overlap --ntasks=1 --cpus-per-task=4` внутри существующей exclusive allocation. Launcher проверяет четыре незанятых выделенных GPU, порты и исходные серверные PID. Команды копируются из `services.json` с заменой только порта; новые GPU задаются через `CUDA_VISIBLE_DEVICES` из allocation. Профили dtype, seed, sampling, xgrammar, context, batch limits и RoPE сохраняются. Для новых процессов раздельные kernel caches. Чужие процессы и шесть исходных сервисов launcher не останавливает; при завершении убирает только собственные новые PID с проверкой их identity. Статус, PID и логи находятся в `jobs/.../performance-meno02/`.
+
+| Пул Meno 0.2 | Логический порт | Физические порты | Активных запросов на копию | Общий лимит |
+| --- | --- | --- | --- | --- |
+| Native 32768 | 9032 | 9032, 9033, 9034 | 8 | 24 |
+| YaRN 65536 | 9035 | 9035, 9036, 9037 | 4 | 12 |
+
+Опциональный `scripts/run_replicated_ragu.py` оборачивает уже проверенный summary-adapter. Общий эффективный concurrency — 36. Исходный config с concurrency 8 **не редактируется**: он участвует в identity manifest/checkpoint. Переопределяются только клиентские семафоры и HTTP transport. Логические endpoint, payload bytes и cache keys сохраняются; отдельные физические адреса выбираются по текущей нагрузке внутри нужного пула. Решение native/YaRN по точному token budget остаётся исходным: короткие запросы не попадают на YaRN. Транспортные сбои допускают ограниченный повтор на другой копии того же пула.
+
+В `MENO_EXECUTION_POLICY` передаётся абсолютный путь к JSON с `model`, `total_concurrency`, `config_sha256`, `wrapper_sha256`, `summary_adapter`, `summary_adapter_sha256` и `routes`. В каждой записи `routes.native`/`routes.yarn` задаются `logical_base_url`, список `backends`, `concurrency`, `per_backend` по таблице. Также сохраняются исходный fingerprint, source pin, pipeline lineage и отдельный `execution_id`. Wrapper проверяет SHA config и обоих адаптеров до старта. Его аргументы совместимы с recovery-helper: `--audit <description-dedup.jsonl> --lineage <existing-summary-lineage.json> -- -m rumba_bench.ragu_harness run --config <unchanged-config> --model meno-lite-0.2 --suite full`.
+
+Переключение выполняется после проверки всех копий: останавливается только supervisor Meno 0.2, проверяется остановка его child, сохраняются закрытые graphs/answers/retrieval и запускается один replacement через `recover_ragu_worker.py --worker-adapter <run_replicated_ragu.py> --adapter-lineage <existing-summary-lineage.json> --incomplete-retries 0`. Незакрытый user архивируется штатным helper и достраивается через raw cache. Предварительная резервная копия границы переключения не является новым checkpoint: writer по-прежнему один, исходный Slurm supervisor. Параллельный живой worker запрещён.
+
+Физические запросы логируются с SHA тела, портом, latency и HTTP status без содержимого сообщений. Новые graphs получают `execution-policy.json` вместе с прежним `pipeline-repair.json`; оба файла копируются обычным checkpoint. Измерения ускорения проводят отдельно на одном и том же наборе запросов и не записывают диагностические ответы в production cache. Контрольный замер на 36 одинаковых production-запросах (24 native, 12 YaRN) дал 94,09 s при concurrency 8 и 32,51 s при распределённом concurrency 36: 2,89× без HTTP/finish errors. Это измерение набора запросов, а не гарантия такого же ускорения полного RAGU. Изменение batching/concurrency может влиять на численную воспроизводимость даже при greedy: это execution provenance, а не обещание побитового совпадения новых ответов. Sampling и строгий QC не меняются. После переключения обязательны пять минут активной проверки и контроль прогресса остальных моделей.
+
 ## Подготовка
 
 Нужны `.venv-ragu` из `requirements-ragu.lock`, отдельный `.venv-vllm` с vLLM 0.29.0, подготовленные `data/` и полный BM25-кэш `.cache/fastembed/`. См. [общий runbook](README_A100_CLUSTER.md). На compute node доступ к интернету не нужен. В `runs/cluster-setup/bootstrap.status` должно быть `ready`; шаблон допускает ожидание фоновой подготовки на headnode до часа и сразу останавливается при `failed:*`.
