@@ -19,8 +19,11 @@ def with_concurrency(config,value):
  return result
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--model',required=True);p.add_argument('--state',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();a.config=a.config.resolve();a.state=a.state.resolve();a.output=a.output.resolve();a.output.mkdir(parents=True,exist_ok=True);lock=(a.output/'lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--model',required=True);p.add_argument('--state',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--levels');p.add_argument('--native-samples',type=int,default=20);p.add_argument('--long-samples',type=int,default=4);a=p.parse_args();a.config=a.config.resolve();a.state=a.state.resolve();a.output=a.output.resolve();a.output.mkdir(parents=True,exist_ok=True);lock=(a.output/'lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
  cfg=read_json(a.config);original_spec=manifest(cfg);original_sha=digest(original_spec);old=read_json(a.state);assert old['status']=='running' and old['model']==a.model and old['stage']=='full';run=Path(old['run_folder']);assert run.parent.name=='ragu-'+original_sha[:16]
+ global_lock=(run/'workflow/concurrency-tuning.lock').open('a');fcntl.flock(global_lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+ assert not (a.output/'tuning-status.json').exists(),'Use a fresh output directory'
+ levels=a.levels or f"{cfg['runtime']['concurrency']},{min(24,cfg['runtime']['concurrency']*2)},{cfg['runtime']['concurrency']}";parsed=list(map(int,levels.split(',')));assert parsed[0]==parsed[-1]==cfg['runtime']['concurrency'] and all(1<=v<=24 for v in parsed)
  own=helper.process_info(os.getpid());status={'pid':os.getpid(),'birth':own['start'],'phase':'preparing','started_at':time.time(),'config':str(a.config),'model':a.model,'run_folder':str(run),'manifest_sha256':original_sha,'original_concurrency':cfg['runtime']['concurrency']};statuspath=a.output/'tuning-status.json'
  def update(phase,**values):status.update(phase=phase,updated_at=time.time(),**values);write_json(statuspath,status)
  identities={}
@@ -44,7 +47,7 @@ def main():
    if time.monotonic()>deadline:raise RuntimeError('Old workflow did not stop; refusing a duplicate')
    time.sleep(.5)
   quiesced=True
-  command=[sys.executable,'-u',str(ROOT/'scripts/benchmark_concurrency.py'),'--config',str(a.config),'--model',a.model,'--workflow-state',str(a.state),'--output',str(a.output),'--levels','8,16,8']
+  command=[sys.executable,'-u',str(ROOT/'scripts/benchmark_concurrency.py'),'--config',str(a.config),'--model',a.model,'--workflow-state',str(a.state),'--output',str(a.output),'--levels',levels,'--baseline',str(cfg['runtime']['concurrency']),'--native-samples',str(a.native_samples),'--long-samples',str(a.long_samples)]
   with (a.output/'benchmark.log').open('a') as log:
    benchmark=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT);update('benchmarking',benchmark_pid=benchmark.pid)
    deadline=time.monotonic()+1800
