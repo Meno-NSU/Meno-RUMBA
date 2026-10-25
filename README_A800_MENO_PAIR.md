@@ -30,6 +30,10 @@ Launcher добавляет `bin` серверного окружения в `PA
 
 `FASTEMBED_CACHE_PATH` указывает на перенесённый в node-local scratch каталог `.cache/fastembed`. Он нужен также внутреннему BM25, который RAGU создаёт для гибридного подбора ICL-примеров без явного `cache_dir`. Офлайн-проверка должна включать `BM25(language="russian")` без `cache_dir` при этом окружении: проверка только BM25 основного индекса не покрывает ICL.
 
+Если один benchmark-worker завершился, пока второй продолжает работу, `scripts/recover_ragu_worker.py` позволяет возобновить только остановившуюся модель внутри той же Slurm allocation. Он проверяет отсутствие живого worker, архивирует незакрытые graphs вместе с их answers/retrieval и сохраняет закрытых пользователей. Для случая буквального управляющего символа внутри JSON-строки helper делает только экранирование: равенство декодированных значений проверяется, исходный wire-ответ архивируется и остаётся в `original_wire_text`. Запрос, greedy/seed/repetition penalty, схема, факты и метрики не меняются. Другие повреждения JSON и неполные генерации этим правилом не исправляются; QC остаётся строгим. Исправляется только node-local копия generation cache, исходный durable cache не переписывается. Recovery-аудит нужно сохранять вместе с результатами.
+
+Запускать helper следует через отдельный `srun --jobid=<job> --overlap` с тем же offline-окружением, `PYTHONPATH`, node-local work и серверными cache paths. Обязательные аргументы: `--config <work/config.pair.json> --model <label> --run-folder <work/runs/ragu-.../label> --state <persistent/recovery-status.json> --log-dir <persistent/recovery-logs>`. Параллельный живой worker не архивируется. Старый supervisor продолжит показывать exit code первого процесса: фактический replacement PID/прогресс находятся в recovery-state. Окончательное завершение подтверждается QC обоих наборов и checkpoint, а история первого сбоя сохраняется.
+
 ## Запуск
 
 Из корня репозитория на headnode:
