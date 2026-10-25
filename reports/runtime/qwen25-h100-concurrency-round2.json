@@ -1,0 +1,105 @@
+{
+  "model": "Qwen2.5-7B-Instruct",
+  "hardware": "single H100 80GB shared by native, YaRN, embedding and reranker services",
+  "benchmark_type": "execution concurrency retuning; not quality or full-RAGU speed",
+  "sampling": {
+    "temperature": 0,
+    "seed": 42,
+    "repetition_penalty": 1.03,
+    "max_tokens": 4096
+  },
+  "contexts": {
+    "native": 32768,
+    "yarn": 65536
+  },
+  "requests_per_profile": 48,
+  "request_mix": {
+    "native": 40,
+    "yarn": 8
+  },
+  "order": [
+    16,
+    20,
+    24,
+    16
+  ],
+  "profiles": [
+    {
+      "concurrency": 16,
+      "seconds": 96.43544725001266,
+      "requests": 48,
+      "output_tokens": 49157,
+      "output_tokens_per_second": 509.7399493835349,
+      "errors": 0,
+      "kv_preemptions": 0.0,
+      "p95_request_seconds": 40.46577095799148,
+      "wall_speedup_vs_fastest_control": 0.9566963580084152,
+      "peak_native_kv_cache_fraction": 0.9287852619458837,
+      "peak_native_waiting_requests": 8.0
+    },
+    {
+      "concurrency": 20,
+      "seconds": 89.23976795899216,
+      "requests": 48,
+      "output_tokens": 49138,
+      "output_tokens_per_second": 550.6289530311207,
+      "errors": 0,
+      "kv_preemptions": 0.0,
+      "p95_request_seconds": 50.53937450000376,
+      "wall_speedup_vs_fastest_control": 1.033837752798676,
+      "peak_native_kv_cache_fraction": 0.9325273459988486,
+      "peak_native_waiting_requests": 12.0
+    },
+    {
+      "concurrency": 24,
+      "seconds": 91.0199281249952,
+      "requests": 48,
+      "output_tokens": 49157,
+      "output_tokens_per_second": 540.0685433688107,
+      "errors": 0,
+      "kv_preemptions": 0.0,
+      "p95_request_seconds": 75.57377254198946,
+      "wall_speedup_vs_fastest_control": 1.0136180402197457,
+      "peak_native_kv_cache_fraction": 0.9037996545768566,
+      "peak_native_waiting_requests": 15.0
+    },
+    {
+      "concurrency": 16,
+      "seconds": 92.25944116699975,
+      "requests": 48,
+      "output_tokens": 49138,
+      "output_tokens_per_second": 532.60673789531,
+      "errors": 0,
+      "kv_preemptions": 0.0,
+      "p95_request_seconds": 41.88277750000998,
+      "wall_speedup_vs_fastest_control": 1.0,
+      "peak_native_kv_cache_fraction": 0.9400690846286701,
+      "peak_native_waiting_requests": 10.0
+    }
+  ],
+  "selected_concurrency": 16,
+  "selection_reason": "no-reliable-gain",
+  "selection_rule": {
+    "minimum_wall_and_token_throughput_gain": 0.05,
+    "maximum_control_wall_drift": 0.15,
+    "require_no_errors_or_extra_preemptions": true,
+    "prefer_lower_concurrency_within_fastest_fraction": 0.03
+  },
+  "wire_payloads_identical": true,
+  "production_generation_cache_untouched": true,
+  "manifest_and_existing_closed_answer_hashes_verified": true,
+  "generation_endpoints_prompts_unchanged": true,
+  "limitations": [
+    "One 48-request sample and two baseline controls; no claim of full-RAGU speed gain.",
+    "Baseline controls differed by about4.5%;20 was only3.4% faster than the faster control.",
+    "Higher concurrency increased p95 latency; native KV cache peaked around94%.",
+    "Batching may change numerical outputs despite identical greedy request bodies.",
+    "Server-side long-context max_num_seqs remains4."
+  ],
+  "technical_audit": {
+    "initial_attempt": "Stopped after first control by a benchmark variable-shadowing error; workflow automatically resumed with16.",
+    "repair": "Keep request samples separate from metric observations; integration test covers all four profiles.",
+    "tests_passed": 6,
+    "incomplete_trial_excluded": true
+  }
+}
