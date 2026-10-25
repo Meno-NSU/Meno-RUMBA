@@ -160,7 +160,11 @@ def main():
     parser.add_argument('--model', required=True)
     parser.add_argument('--max-attempts', type=int, default=180)
     parser.add_argument('--incomplete-retries', type=int, default=2)
+    parser.add_argument('--worker-adapter', type=Path)
+    parser.add_argument('--adapter-lineage', type=Path)
     args = parser.parse_args()
+    if bool(args.worker_adapter) != bool(args.adapter_lineage):
+        parser.error('--worker-adapter and --adapter-lineage must be provided together')
     if not os.environ.get('SLURM_JOB_ID'):
         parser.error('Run inside the existing Slurm allocation')
     config = args.config.resolve(); work = config.parent
@@ -209,6 +213,10 @@ def main():
         state['history'].append(event)
         command = [sys.executable, '-u', '-m', 'rumba_bench.ragu_harness', 'run',
                    '--config', str(config), '--model', args.model, '--suite', 'full']
+        if args.worker_adapter:
+            command = [sys.executable, '-u', str(args.worker_adapter.resolve()),
+                       '--audit', str(logdir / 'description-dedup.jsonl'),
+                       '--lineage', str(args.adapter_lineage.resolve()), '--', *command[2:]]
         with (logdir / ('benchmark-attempt-' + str(attempt) + '.log')).open('a') as output:
             child = subprocess.Popen(command, cwd=work, env=os.environ.copy(), stdout=output,
                                      stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
