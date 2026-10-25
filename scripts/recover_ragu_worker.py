@@ -4,6 +4,7 @@
 Only JSON string serialization is repaired: literal control characters become
 escapes with identical decoded values. Original wire responses remain archived.
 Generation flags, schemas, ontology, scoring and pinned checkout stay unchanged.
+Incomplete generations may be retried with the identical request, at most twice.
 """
 import argparse
 import fcntl
@@ -12,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -100,6 +102,29 @@ def repair_cached_json(cache, model, archive):
     return repairs
 
 
+def retry_incomplete_cached(cache, model, archive, retry_counts, maximum=2):
+    """Invalidate only incomplete calls, retaining wire bytes and exact requests."""
+    retries = []
+    for path in sorted(cache.glob('*.json')):
+        raw = json.loads(path.read_text())
+        request = raw.get('request', {})
+        if request.get('model') != model or raw.get('finish_reason') != 'length':
+            continue
+        count = retry_counts.get(path.name, 0)
+        if count >= maximum:
+            continue
+        backup = archive / 'incomplete-wire-responses' / path.name
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, backup)
+        event = {'kind': 'retry_incomplete_identical_request', 'wire_backup': str(backup),
+                 'request_sha256': hashlib.sha256(json.dumps(request,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
+                 'retry': count + 1, 'maximum_retries': maximum, 'request_unchanged': True}
+        path.unlink()
+        retry_counts[path.name] = count + 1
+        retries.append({'cache_file': str(path), **event})
+    return retries
+
+
 def archive_unclosed(folder, archive):
     users = []
     for graph in sorted((folder / 'graphs').glob('*')):
@@ -134,6 +159,7 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--model', required=True)
     parser.add_argument('--max-attempts', type=int, default=180)
+    parser.add_argument('--incomplete-retries', type=int, default=2)
     args = parser.parse_args()
     if not os.environ.get('SLURM_JOB_ID'):
         parser.error('Run inside the existing Slurm allocation')
@@ -153,17 +179,28 @@ def main():
     def update(phase, **extra):
         state.update(phase=phase, updated_at=time.time(), **extra)
         write_json(args.state, state)
+    stopping = []
+    def stop(number, frame):
+        stopping.append(number)
+    for number in (signal.SIGTERM, signal.SIGINT, signal.SIGUSR1):
+        signal.signal(number, stop)
     cache = work / 'runs/cache/ragu/generation'
+    incomplete_retry_counts = {}
     state['cache_repairs_already_present'] = [
         raw['json_serialization_repair'] for path in cache.glob('*.json')
         if (raw := json.loads(path.read_text())).get('request', {}).get('model') == args.model
         and raw.get('json_serialization_repair')]
     for attempt in range(1, args.max_attempts + 1):
+        if stopping:
+            update('interrupted', child_pid=None)
+            return 75
         existing = live_workers(args.model, work)
         if existing:
             raise RuntimeError(f'Refusing to archive or duplicate live workers: {existing}')
         archive = logdir / ('attempt-' + str(attempt) + '-' + str(time.time_ns()))
         repairs = repair_cached_json(cache, args.model, archive)
+        repairs += retry_incomplete_cached(cache, args.model, archive,
+                                           incomplete_retry_counts, args.incomplete_retries)
         if attempt > 1 and not repairs:
             update('failed', error='Worker failed without a supported serialization repair', child_pid=None)
             return 1
@@ -178,9 +215,17 @@ def main():
             update('running', attempt=attempt, child_pid=child.pid, child_command=command,
                    log=str(logdir / ('benchmark-attempt-' + str(attempt) + '.log')))
             while child.poll() is None:
+                if stopping:
+                    child.terminate()
+                    try:
+                        child.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        child.kill(); child.wait()
+                    update('interrupted', child_pid=None, last_exit_code=child.returncode)
+                    return 75
                 update('running', answers=len(list((folder / 'answers/full').glob('*.json'))),
                        closed_users=len(list((folder / 'graphs').glob('*/.checkpoint-ready.json'))))
-                time.sleep(15)
+                time.sleep(5)
         event['exit_code'] = child.returncode
         if child.returncode == 0:
             qc = json.loads((folder / 'full/qc.json').read_text())

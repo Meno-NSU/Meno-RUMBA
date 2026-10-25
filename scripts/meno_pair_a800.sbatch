@@ -48,7 +48,7 @@ for ((attempt=0; attempt<240; attempt++)); do
   sleep 15
 done
 [[ $preparation == ready ]] || { echo "Preparation did not finish within one hour" >&2; exit 1; }
-exec .venv-ragu/bin/python -u scripts/run_meno_pair.py \
+exec .venv-ragu/bin/python -u scripts/run_meno_pair_resilient.py \
   --models-dir "${MODELS_DIR:-$PWD/../models}" \
   --vllm-env "${CLUSTER_VLLM_ENV:-$PWD/.venv-vllm}" \
   --local-scratch "$CLUSTER_LOCAL_SCRATCH" \

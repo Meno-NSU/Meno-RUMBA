@@ -49,6 +49,22 @@ def test_incomplete_or_structurally_invalid_json_is_not_repaired():
             recovery.escape_json_string_controls(raw)
 
 
+def test_incomplete_retries_keep_wire_and_stop_at_the_bound(tmp_path):
+    cache=tmp_path/'cache';cache.mkdir()
+    raw={'request':{'model':'meno-lite-0.2','seed':42,'max_tokens':4096},'text':'{"description":"repeat','finish_reason':'length'}
+    path=cache/'request.json';counts={}
+    for attempt in range(2):
+        path.write_text(json.dumps(raw))
+        original=path.read_bytes()
+        events=recovery.retry_incomplete_cached(cache,'meno-lite-0.2',tmp_path/str(attempt),counts,2)
+        assert len(events)==1 and not path.exists()
+        assert Path(events[0]['wire_backup']).read_bytes()==original
+        assert events[0]['retry']==attempt+1
+    path.write_text(json.dumps(raw))
+    assert recovery.retry_incomplete_cached(cache,'meno-lite-0.2',tmp_path/'third',counts,2)==[]
+    assert json.loads(path.read_text())==raw
+
+
 def test_archive_handles_separate_filesystems_and_keeps_closed_users(tmp_path, monkeypatch):
     folder = tmp_path / 'run'
     graph = folder / 'graphs/user_1'
