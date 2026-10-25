@@ -207,7 +207,8 @@ def main():
         raise ValueError("At least 12 GiB free is required for durable checkpoints")
     work = args.local_scratch / "work"
     stage_repository(ROOT, work, revision)
-    environment = {**os.environ, "PYTHONPATH": str(work / "third_party/RAGU") + os.pathsep + str(work)}
+    environment = {**os.environ, "PYTHONPATH": str(work / "third_party/RAGU") + os.pathsep + str(work),
+                   "FASTEMBED_CACHE_PATH": str(work / ".cache/fastembed")}
     config_path = work / "config.pair.json"
     write_json(config_path, config)
     manifest_code = "from pathlib import Path;from rumba_bench.data import digest,read_json;from rumba_bench.ragu_harness import manifest;print('runs/ragu-'+digest(manifest(read_json(Path('config.pair.json'))))[:16])"
