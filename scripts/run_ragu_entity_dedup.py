@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Resume a worker with exact description deduplication before summarization.
 
-Sampling, schemas, prompts, extraction results and provenance are unchanged.
+Sampling, schemas, extraction results and source references are unchanged.
 Only a homogeneous list of repeated, byte-identical descriptions is collapsed
 before the existing summarization prompt is rendered. Mixed lists remain byte
 identical, including their duplicates, to preserve successful cached requests.
@@ -75,7 +75,7 @@ def install_dedup_patch(summarizer, audit_path, lineage_id, context=lambda: None
 
 def install_failed_summary_retry(generation, registry, audit_path, lineage_id, context,
                                  clarify_prompt=False):
-    """Retry a failed mixed-list summary once; successful calls stay untouched."""
+    """Retry an incomplete entity summary once; successful calls stay untouched."""
     original = generation.call
 
     def call(self, messages, *args, **kwargs):
