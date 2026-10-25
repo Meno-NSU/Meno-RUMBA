@@ -1,0 +1,58 @@
+{
+  "model": "Qwen2.5-7B-Instruct",
+  "hardware": "single H100 80GB shared by native, YaRN, embedding and reranker services",
+  "benchmark_type": "execution concurrency; not a quality or full-RAGU speed result",
+  "sampling": {
+    "temperature": 0,
+    "seed": 42,
+    "repetition_penalty": 1.03,
+    "max_tokens": 4096
+  },
+  "contexts": {
+    "native": 32768,
+    "yarn": 65536
+  },
+  "requests_per_profile": 24,
+  "request_mix": {
+    "native": 20,
+    "yarn": 4
+  },
+  "order": [
+    8,
+    16,
+    8
+  ],
+  "profiles": [
+    {
+      "concurrency": 8,
+      "seconds": 65.10934408298635,
+      "requests": 24,
+      "output_tokens": 23084,
+      "errors": 0
+    },
+    {
+      "concurrency": 16,
+      "seconds": 54.41695954199531,
+      "requests": 24,
+      "output_tokens": 23672,
+      "errors": 0
+    },
+    {
+      "concurrency": 8,
+      "seconds": 66.63201895800012,
+      "requests": 24,
+      "output_tokens": 23313,
+      "errors": 0
+    }
+  ],
+  "selected_concurrency": 16,
+  "wall_time_speedup": 1.1964899294445033,
+  "request_set_and_sampling_identical": true,
+  "production_cache_untouched": true,
+  "limitations": [
+    "Small request sample; full RAGU acceleration may differ.",
+    "Batching changes numerical outputs even with greedy decoding.",
+    "Server-side long-context max_num_seqs remains4."
+  ]
+}
+
