@@ -67,7 +67,7 @@
 
 | Модель | n | Оценено | RUMBA | F1 |
 |---|---:|---:|---:|---:|
-| meno-lite-0.1 | 1508 | 1026/1508 | ожидается | 0.2034 |
+| meno-lite-0.1 | 1508 | 1508/1508 | 0.4052 | 0.2034 |
 | qwen2.5-7b-instruct | 1026 | 1026/1026 | 0.4571 | 0.2320 |
 | meno-lite-0.2 | 345 | 345/345 | 0.5594 | 0.3061 |
 
@@ -75,16 +75,16 @@
 
 | Категория | Модель | n | Оценено | RUMBA | F1 |
 |---|---|---:|---:|---:|---:|
-| atemporal × single | meno-lite-0.1 | 659 | 471/659 | ожидается | 0.2744 |
+| atemporal × single | meno-lite-0.1 | 659 | 659/659 | 0.5660 | 0.2744 |
 | atemporal × single | qwen2.5-7b-instruct | 471 | 471/471 | 0.5860 | 0.2945 |
 | atemporal × single | meno-lite-0.2 | 198 | 198/198 | 0.6616 | 0.4094 |
-| atemporal × multi | meno-lite-0.1 | 439 | 323/439 | ожидается | 0.1537 |
+| atemporal × multi | meno-lite-0.1 | 439 | 439/439 | 0.2733 | 0.1537 |
 | atemporal × multi | qwen2.5-7b-instruct | 323 | 323/323 | 0.3406 | 0.1823 |
 | atemporal × multi | meno-lite-0.2 | 129 | 129/129 | 0.4109 | 0.1520 |
-| temporal × single | meno-lite-0.1 | 257 | 141/257 | ожидается | 0.1516 |
+| temporal × single | meno-lite-0.1 | 257 | 257/257 | 0.3385 | 0.1516 |
 | temporal × single | qwen2.5-7b-instruct | 141 | 141/141 | 0.4043 | 0.1899 |
 | temporal × single | meno-lite-0.2 | 4 | 4/4 | 0.7500 | 0.3750 |
-| temporal × multi | meno-lite-0.1 | 153 | 91/153 | ожидается | 0.1274 |
+| temporal × multi | meno-lite-0.1 | 153 | 153/153 | 0.2026 | 0.1274 |
 | temporal × multi | qwen2.5-7b-instruct | 91 | 91/91 | 0.2857 | 0.1495 |
 | temporal × multi | meno-lite-0.2 | 14 | 14/14 | 0.4286 | 0.2442 |
 

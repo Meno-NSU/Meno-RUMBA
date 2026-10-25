@@ -1,5 +1,5 @@
 {
-  "status": "judge_pending",
+  "status": "scored",
   "partial_dataset": true,
   "expected_test_questions": 1543,
   "cohorts": {
@@ -186,39 +186,39 @@
       }
     },
     "available": {
-      "status": "judge_pending",
+      "status": "scored",
       "paired": false,
       "models": {
         "meno-lite-0.1": {
           "overall": {
             "n": 1508,
-            "judged": 1026,
-            "rumba_metric": null,
+            "judged": 1508,
+            "rumba_metric": 0.4051724137931034,
             "f1": 0.2033974989671327
           },
           "temporal_x_session_scope": {
             "atemporal × multi": {
               "n": 439,
-              "judged": 323,
-              "rumba_metric": null,
+              "judged": 439,
+              "rumba_metric": 0.2733485193621868,
               "f1": 0.1536855779460861
             },
             "atemporal × single": {
               "n": 659,
-              "judged": 471,
-              "rumba_metric": null,
+              "judged": 659,
+              "rumba_metric": 0.5660091047040972,
               "f1": 0.2743629789824992
             },
             "temporal × multi": {
               "n": 153,
-              "judged": 91,
-              "rumba_metric": null,
+              "judged": 153,
+              "rumba_metric": 0.20261437908496732,
               "f1": 0.12743684591607454
             },
             "temporal × single": {
               "n": 257,
-              "judged": 141,
-              "rumba_metric": null,
+              "judged": 257,
+              "rumba_metric": 0.33852140077821014,
               "f1": 0.15156583326645126
             }
           }
