@@ -12,6 +12,7 @@ from pathlib import Path
 import runpy
 import subprocess
 import sys
+import uuid
 
 
 def supervised_command(command, project, helper, job):
@@ -39,7 +40,37 @@ def supervised_command(command, project, helper, job):
                '--state',str(state),'--log-dir',str(logdir)]
     return wrapped, {'model':model,'original_command':original,'supervised_command':wrapped,
                      'state':str(state),'log_dir':str(logdir),
+                     'run_folder':str(work/paths['run_relative']/model),
+                     'checkpoint_dir':str(Path(current['durable'])/'checkpoints'),
                      'checkpoint_fingerprint':current['fingerprint']}
+
+
+def mark_pristine_restored_users(event):
+    """The pinned restore removes markers; retain its verified closed objects.
+
+    This runs exactly before the model's first process is spawned, while the
+    staged restored databases have never been opened by a benchmark worker.
+    """
+    checkpoint=Path(event['checkpoint_dir']);latest=checkpoint/'latest.json'
+    if not latest.exists():
+        return 0
+    state=json.loads(latest.read_text())
+    if state['fingerprint']!=event['checkpoint_fingerprint']:
+        raise ValueError('Restored checkpoint fingerprint changed')
+    count=0
+    for user,record in state['users'].get(event['model'],{}).items():
+        relative=Path(record['object'])
+        if relative.is_absolute() or '..' in relative.parts or Path(user).name!=user:
+            raise ValueError('Unsafe restored object path')
+        source=checkpoint/relative;graph=Path(event['run_folder'])/'graphs'/user
+        if (graph/'build_report.json').read_bytes()!=(source/'graph/build_report.json').read_bytes():
+            raise ValueError('Restored graph differs from its immutable checkpoint')
+        ready=json.loads((source/'object.json').read_text())
+        if not ready['graph_closed'] or ready['user']!=user or ready['suite']!='full':
+            raise ValueError('Invalid committed closed-user marker')
+        marker=graph/'.checkpoint-ready.json';tmp=marker.with_name(marker.name+'.tmp-'+uuid.uuid4().hex)
+        tmp.write_text(json.dumps(ready,indent=2)+'\n');tmp.replace(marker);count+=1
+    return count
 
 
 def main():
@@ -61,6 +92,7 @@ def main():
             return original_popen(command,*args,**kwargs)
         wrapped, event = supervised_command(command,project,helper,job)
         if event:
+            event['pristine_restored_users']=mark_pristine_restored_users(event)
             event.update(event='worker_supervision',job_id=job,revision=revision,
                          launcher_sha256=hashlib.sha256(launcher.read_bytes()).hexdigest(),
                          recovery_helper_sha256=hashlib.sha256(helper.read_bytes()).hexdigest(),

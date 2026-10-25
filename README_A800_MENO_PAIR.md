@@ -36,6 +36,8 @@ Launcher добавляет `bin` серверного окружения в `PA
 
 Новый sbatch по умолчанию использует `scripts/run_meno_pair_resilient.py`: он исполняет исходный `run_meno_pair.py`, оборачивая только запуск двух benchmark-процессов в recovery-supervisor. Родитель отслеживает эти supervisor с первого старта и получает `0` только после строгого QC на 1543 вопросах; одна восстановимая ошибка не завершает сервисы другой модели. `MENO_PAIR_REVISION` обязателен. Реальные команды, SHA-256 launcher/helper/adapter и сохранённый fingerprint записываются в `jobs/.../recovery-MODEL/supervision.json`; состояния workers — в `runs/cluster-setup/recovery-JOB/MODEL-status.json`. При SIGTERM дочерний worker останавливается до возврата управления writer чекпоинта. На уже pinned checkout адаптер можно развернуть вне tracked source, сохранив его fingerprint; эти внешние файлы и их SHA следует включить в provenance запуска.
 
+Pinned restore снимает closed-marker с рабочей копии графа перед повторным открытием. Адаптер восстанавливает marker из immutable checkpoint непосредственно перед первым запуском worker и только если `build_report.json` рабочей копии в точности совпадает с сохранённым. Это позволяет переиспользовать восстановленные закрытые графы: отсутствие marker у такой pristine-копии не должно запускать ненужное архивирование и rebuild. При несовпадении копия не признаётся закрытой автоматически.
+
 ## Запуск
 
 Из корня репозитория на headnode:
