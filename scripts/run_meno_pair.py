@@ -238,11 +238,13 @@ def main():
         return value
     complete = False
     try:
+        status("starting-services")
         for service in services:
             if stopping: raise InterruptedError("Interrupted during startup")
             helper.require_free_port(service["port"])
             output = (job_dir / (service["tag"] + ".log")).open("a"); files.append(output)
-            env = {**environment, "CUDA_VISIBLE_DEVICES": service["gpu"]}
+            env = {**environment, "CUDA_VISIBLE_DEVICES": service["gpu"],
+                   "PATH": str(server.parent) + os.pathsep + environment.get("PATH", "")}
             # Build caches for independent vLLM executors must not overwrite one
             # another; retain every required cache variable from the sbatch file.
             for key in ("OUTLINES_CACHE_DIR", "TRITON_CACHE_DIR", "FLASHINFER_WORKSPACE_BASE"):

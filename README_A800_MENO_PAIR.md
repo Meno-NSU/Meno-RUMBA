@@ -26,6 +26,8 @@
 
 Обязательные переменные из инструкции кластера заданы в sbatch: `PIP_CACHE_DIR`, `PYTORCH_CUDA_ALLOC_CONF`, `HF_HOME`, `DO_NOT_TRACK=1`, `HF_DATASETS_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, `ANONYMIZED_TELEMETRY=False`, `OUTLINES_CACHE_DIR`, `TORCH_HOME`, `XDG_CACHE_HOME`, `TRITON_CACHE_DIR`, `FLASHINFER_WORKSPACE_BASE`. Дополнительно включён `HF_HUB_OFFLINE=1`; HTTP-прокси подготовки удаляются из окружения вычислительного задания. У отдельных vLLM executor разные подкаталоги kernel-кэшей.
 
+Launcher добавляет `bin` серверного окружения в `PATH` каждого vLLM-процесса. Это нужно для JIT-сборки FlashInfer: абсолютный путь к `vllm` сам по себе не делает установленный рядом `ninja` доступным. Проверьте `<vllm-env>/bin/ninja --version` до отправки; системное окружение и драйверы менять не требуется.
+
 ## Запуск
 
 Из корня репозитория на headnode:
