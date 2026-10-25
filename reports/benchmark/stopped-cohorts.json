@@ -112,39 +112,39 @@
       }
     },
     "qwen_shared": {
-      "status": "judge_pending",
+      "status": "scored",
       "paired": true,
       "models": {
         "qwen2.5-7b-instruct": {
           "overall": {
             "n": 1026,
-            "judged": 345,
-            "rumba_metric": null,
+            "judged": 1026,
+            "rumba_metric": 0.4571150097465887,
             "f1": 0.23196387628985204
           },
           "temporal_x_session_scope": {
             "atemporal × multi": {
               "n": 323,
-              "judged": 129,
-              "rumba_metric": null,
+              "judged": 323,
+              "rumba_metric": 0.34055727554179566,
               "f1": 0.18234458295046715
             },
             "atemporal × single": {
               "n": 471,
-              "judged": 198,
-              "rumba_metric": null,
+              "judged": 471,
+              "rumba_metric": 0.5859872611464968,
               "f1": 0.29451431203511835
             },
             "temporal × multi": {
               "n": 91,
-              "judged": 14,
-              "rumba_metric": null,
+              "judged": 91,
+              "rumba_metric": 0.2857142857142857,
               "f1": 0.14945183456906708
             },
             "temporal × single": {
               "n": 141,
-              "judged": 4,
-              "rumba_metric": null,
+              "judged": 141,
+              "rumba_metric": 0.40425531914893614,
               "f1": 0.18993814798625158
             }
           }
@@ -152,33 +152,33 @@
         "meno-lite-0.1": {
           "overall": {
             "n": 1026,
-            "judged": 345,
-            "rumba_metric": null,
+            "judged": 1026,
+            "rumba_metric": 0.4142300194931774,
             "f1": 0.20341494716501204
           },
           "temporal_x_session_scope": {
             "atemporal × multi": {
               "n": 323,
-              "judged": 129,
-              "rumba_metric": null,
+              "judged": 323,
+              "rumba_metric": 0.26006191950464397,
               "f1": 0.13830286035005526
             },
             "atemporal × single": {
               "n": 471,
-              "judged": 198,
-              "rumba_metric": null,
+              "judged": 471,
+              "rumba_metric": 0.5774946921443737,
               "f1": 0.27436263316149473
             },
             "temporal × multi": {
               "n": 91,
-              "judged": 14,
-              "rumba_metric": null,
+              "judged": 91,
+              "rumba_metric": 0.24175824175824176,
               "f1": 0.14160408470363223
             },
             "temporal × single": {
               "n": 141,
-              "judged": 4,
-              "rumba_metric": null,
+              "judged": 141,
+              "rumba_metric": 0.3333333333333333,
               "f1": 0.15546907780950334
             }
           }
@@ -192,32 +192,32 @@
         "meno-lite-0.1": {
           "overall": {
             "n": 1508,
-            "judged": 345,
+            "judged": 1026,
             "rumba_metric": null,
             "f1": 0.2033974989671327
           },
           "temporal_x_session_scope": {
             "atemporal × multi": {
               "n": 439,
-              "judged": 129,
+              "judged": 323,
               "rumba_metric": null,
               "f1": 0.1536855779460861
             },
             "atemporal × single": {
               "n": 659,
-              "judged": 198,
+              "judged": 471,
               "rumba_metric": null,
               "f1": 0.2743629789824992
             },
             "temporal × multi": {
               "n": 153,
-              "judged": 14,
+              "judged": 91,
               "rumba_metric": null,
               "f1": 0.12743684591607454
             },
             "temporal × single": {
               "n": 257,
-              "judged": 4,
+              "judged": 141,
               "rumba_metric": null,
               "f1": 0.15156583326645126
             }
@@ -226,33 +226,33 @@
         "qwen2.5-7b-instruct": {
           "overall": {
             "n": 1026,
-            "judged": 345,
-            "rumba_metric": null,
+            "judged": 1026,
+            "rumba_metric": 0.4571150097465887,
             "f1": 0.23196387628985204
           },
           "temporal_x_session_scope": {
             "atemporal × multi": {
               "n": 323,
-              "judged": 129,
-              "rumba_metric": null,
+              "judged": 323,
+              "rumba_metric": 0.34055727554179566,
               "f1": 0.18234458295046715
             },
             "atemporal × single": {
               "n": 471,
-              "judged": 198,
-              "rumba_metric": null,
+              "judged": 471,
+              "rumba_metric": 0.5859872611464968,
               "f1": 0.29451431203511835
             },
             "temporal × multi": {
               "n": 91,
-              "judged": 14,
-              "rumba_metric": null,
+              "judged": 91,
+              "rumba_metric": 0.2857142857142857,
               "f1": 0.14945183456906708
             },
             "temporal × single": {
               "n": 141,
-              "judged": 4,
-              "rumba_metric": null,
+              "judged": 141,
+              "rumba_metric": 0.40425531914893614,
               "f1": 0.18993814798625158
             }
           }
